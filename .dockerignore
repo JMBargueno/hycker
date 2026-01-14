@@ -1,0 +1,6 @@
+.github/
+scripts/SCRIPTS.md
+.gitignore
+Docker-compose.yml
+README.md
+assets/

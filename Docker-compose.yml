@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  hycker:
+    image: jmbargueno/hycker:latest
+    container_name: hycker
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+    ports:
+      - "25573:5520/udp" # Hytale server port (UDP)
+
+    # Environment variables for server configuration
+    environment:
+      # Hytale server settings
+      HYTALE_ASSETS_PATH: "Assets.zip"
+      HYTALE_AUTH_MODE: "authenticated"
+      HYTALE_BIND_ADDRESS: "0.0.0.0:5520"
+      # Backup configuration
+      HYTALE_BACKUP_ENABLED: "true"
+      HYTALE_BACKUP_FREQUENCY: "30"
+      HYTALE_BACKUP_DIR: "/hycker/backups"
+
+      # Server features
+      HYTALE_DISABLE_SENTRY: "false"
+
+      # Java memory configuration
+      JAVA_OPTS: "-Xms1G -Xmx4G"
+
+    # Volume mounts for persistent data
+    volumes:
+      # All server data mounted to local ./data directory
+      - ./data:/hycker
+
+    network_mode: bridge
