@@ -8,7 +8,7 @@ services:
     tty: true
     stdin_open: true
     ports:
-      - "25573:5520/udp" # Hytale server port (UDP)
+      - "5520:5520/udp" # Hytale server port (UDP)
 
     # Environment variables for server configuration
     environment:
