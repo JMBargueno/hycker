@@ -79,19 +79,61 @@ See [scripts/SCRIPTS.md](scripts/SCRIPTS.md) for detailed documentation of:
 - `download-server.sh` - Server file download automation
 - `backup-config.sh` - Backup configuration management
 - `display-startup-info.sh` - Startup information display
+- `download-mod-zip.sh` - Downloads and extracts a mod ZIP into `data/mods` (see Mods section)
 
 ## ⚙️ Environment Variables
 
-| Variable                  | Description                        | Default           | Example                      |
-| ------------------------- | ---------------------------------- | ----------------- | ---------------------------- |
-| `HYTALE_ASSETS_PATH`      | Path to the Assets.zip file        | `Assets.zip`      | `Assets.zip`                 |
-| `HYTALE_AUTH_MODE`        | Authentication mode for players    | `authenticated`   | `authenticated` or `offline` |
-| `HYTALE_BIND_ADDRESS`     | Server bind address and port       | `0.0.0.0:5520`    | `0.0.0.0:5520`               |
-| `HYTALE_BACKUP_ENABLED`   | Enable automatic backups           | `true`            | `true` or `false`            |
-| `HYTALE_BACKUP_FREQUENCY` | Backup interval in minutes         | `30`              | `30`, `60`, `120`            |
-| `HYTALE_BACKUP_DIR`       | Directory for backup storage       | `/hycker/backups` | `/hycker/backups`            |
-| `HYTALE_DISABLE_SENTRY`   | Disable Sentry crash reporting     | `false`           | `true` or `false`            |
-| `JAVA_OPTS`               | JVM memory and performance options | `-Xms1G -Xmx4G`   | `-Xms2G -Xmx8G`              |
+| Variable                  | Description                                                                          | Default           | Example                        |
+| ------------------------- | ------------------------------------------------------------------------------------ | ----------------- | ------------------------------ |
+| `HYTALE_ASSETS_PATH`      | Path to the Assets.zip file                                                          | `Assets.zip`      | `Assets.zip`                   |
+| `HYTALE_AUTH_MODE`        | Authentication mode for players                                                      | `authenticated`   | `authenticated` or `offline`   |
+| `HYTALE_BIND_ADDRESS`     | Server bind address and port                                                         | `0.0.0.0:5520`    | `0.0.0.0:5520`                 |
+| `HYTALE_BACKUP_ENABLED`   | Enable automatic backups                                                             | `true`            | `true` or `false`              |
+| `HYTALE_BACKUP_FREQUENCY` | Backup interval in minutes                                                           | `30`              | `30`, `60`, `120`              |
+| `HYTALE_BACKUP_DIR`       | Directory for backup storage                                                         | `/hycker/backups` | `/hycker/backups`              |
+| `HYTALE_DISABLE_SENTRY`   | Disable Sentry crash reporting                                                       | `false`           | `true` or `false`              |
+| `JAVA_OPTS`               | JVM memory and performance options                                                   | `-Xms1G -Xmx4G`   | `-Xms2G -Xmx8G`                |
+| `HYCKER_MOD_ZIP_URL`      | URL of a mod ZIP to download and extract into `data/mods` before starting the server | _(empty)_         | `https://example.com/mods.zip` |
+
+## 🧩 Automatic Mods Download
+
+You can automatically install mods when starting the container by setting the `HYCKER_MOD_ZIP_URL` environment variable with the URL of a ZIP file. The contents of the ZIP will be extracted into `data/mods` before the server starts.
+
+### Supported URLs
+
+- **Direct ZIP downloads**: Any public URL pointing to a `.zip` file
+- **Google Drive**: Share links from Google Drive (automatically detected and handled)
+
+### Google Drive Setup
+
+1. Upload your mod ZIP to Google Drive
+2. Right-click the file → Share
+3. Set "General access" to **"Anyone with the link"**
+4. Copy the share link (format: `https://drive.google.com/file/d/FILE_ID/view?usp=drive_link`)
+5. Use this URL in `HYCKER_MOD_ZIP_URL`
+
+### Example Configuration
+
+**docker-compose.yml**:
+
+```yaml
+environment:
+  # Direct download
+  HYCKER_MOD_ZIP_URL: "https://example.com/mods.zip"
+
+  # Google Drive (any format works)
+  HYCKER_MOD_ZIP_URL: "https://drive.google.com/file/d/1lfIlKi7wztuesSjcO4gJHPvrtMQX2bbE/view?usp=drive_link"
+```
+
+### Features
+
+- ✅ Automatic Google Drive detection and file ID extraction
+- ✅ Handles large files with virus scan confirmation
+- ✅ Supports nested ZIP structures (ZIP within ZIP)
+- ✅ Validates downloaded files before extraction
+- ✅ Flattens directory structure for clean mod installation
+
+This allows you to automate the installation of custom mods on every deployment.
 
 ### Variable Details
 

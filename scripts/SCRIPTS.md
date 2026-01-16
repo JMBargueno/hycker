@@ -12,6 +12,58 @@ These scripts are designed to be sourced by [../entrypoint.sh](../entrypoint.sh)
 
 ## Scripts
 
+### download-mod-zip.sh
+
+**Purpose**: Downloads a ZIP file from a URL, extracts it, and copies its contents into `data/mods`.
+
+**Main Function**: `download_mod_zip <zip_url>`
+
+**Usage**:
+
+```bash
+download_mod_zip "https://example.com/mod.zip"
+# Or with Google Drive
+download_mod_zip "https://drive.google.com/file/d/FILE_ID/view?usp=drive_link"
+```
+
+**Features**:
+
+- **Google Drive Support**: Automatically detects and handles Google Drive URLs
+  - Extracts file ID from various Google Drive URL formats
+  - Uses `gdown` for reliable downloads with large file support
+  - Handles virus scan confirmation pages automatically
+- **Nested ZIP Handling**: Detects and extracts nested ZIP files (common with Google Drive folders)
+- **File Validation**: Verifies downloaded files are valid ZIP archives before extraction
+- **Flat Structure**: Flattens directory structure, copying all files directly to `/hycker/mods`
+
+**Details**:
+
+- The destination is always `/hycker/mods` in the container.
+- Uses a temporary directory in `/tmp` for download and extraction.
+- For Google Drive URLs, the file must be shared publicly ("Anyone with the link can view").
+
+**Integration**:
+
+- The script defines the function and can be used standalone or (recommended) as a sourced function.
+- In `entrypoint.sh`, it is automatically called if the environment variable `HYCKER_MOD_ZIP_URL` is set:
+
+```bash
+source /opt/hycker-scripts/download-mod-zip.sh
+if [ -n "$HYCKER_MOD_ZIP_URL" ]; then
+  echo "[HYCKER] Downloading mod from $HYCKER_MOD_ZIP_URL"
+  download_mod_zip "$HYCKER_MOD_ZIP_URL"
+fi
+```
+
+**Dependencies**:
+
+- `curl` to download non-Google Drive ZIPs
+- `gdown` (Python package) for Google Drive downloads
+- `unzip` to extract files
+- `python3` and `pip3` for gdown installation
+
+---
+
 ### download-server.sh
 
 **Purpose**: Automates the download and installation of Hytale server files.
@@ -114,14 +166,16 @@ All three scripts are loaded in [../entrypoint.sh](../entrypoint.sh) using `sour
 source /opt/hycker-scripts/download-server.sh
 source /opt/hycker-scripts/backup-config.sh
 source /opt/hycker-scripts/display-startup-info.sh
+source /opt/hycker-scripts/download-mod-zip.sh
 ```
 
 They are then executed in this order:
 
-1. `download_and_extract_server` - Ensures server files exist
-2. `configure_backup_options` - Configures backup arguments
-3. `display_startup_info` - Shows final configuration
-4. `exec "${java_args[@]}"` - Starts the server
+1. `download_mod_zip` - Downloads and extracts mods if `HYCKER_MOD_ZIP_URL` is set
+2. `download_and_extract_server` - Ensures server files exist
+3. `configure_backup_options` - Configures backup arguments
+4. `display_startup_info` - Shows final configuration
+5. `exec "${java_args[@]}"` - Starts the server
 
 ## Modifications and Extensions
 
