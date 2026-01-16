@@ -48,6 +48,13 @@ RUN useradd -m -u 1000 hytale && \
 # Keep running as root for file operations, will change user context in entrypoint if needed
 # USER hytale
 
+# Metadata labels
+LABEL maintainer="contact@jmbargueno.com" \
+    name="jmbargueno/hycker" \
+    github="https://github.com/jmbargueno/hycker" \
+    dockerhub="https://hub.docker.com/r/jmbargueno/hycker" \
+    description="Hycker - Hytale Server Docker Container"
+
 # Health check to verify the server is running
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=60s \
     CMD sh -c "ps aux | grep -v grep | grep java || exit 1"
