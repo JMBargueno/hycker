@@ -103,7 +103,7 @@ Example in `docker-compose.yml`:
 
 ```yaml
 environment:
-  HYCKER_MOD_ZIP_URL: "https://example.com/mymodpack.zip"
+  HYCKER_MOD_ZIP_URL: "https://drive.google.com/uc?export=download&id=1lfIlKi7wztuesSjcO4gJHPvrtMQX2bbE"
 ```
 
 This allows you to automate the installation of custom mods on every deployment.

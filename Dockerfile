@@ -3,13 +3,17 @@ FROM eclipse-temurin:25-jdk-jammy
 WORKDIR /hycker
 
 # Install dependencies
-# Update package list, install minimal required tools (wget, unzip, curl)
+# Update package list, install minimal required tools (wget, unzip, curl, python3, pip)
+# Install gdown for Google Drive downloads
 # Finally, remove apt cache to reduce image size
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     wget \
     unzip \
-    curl && \
+    curl \
+    python3 \
+    python3-pip && \
+    pip3 install --no-cache-dir gdown && \
     mkdir -p /hycker/data && \
     mkdir -p /opt/hycker-scripts && \
     rm -rf /var/lib/apt/lists/*
