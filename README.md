@@ -99,12 +99,39 @@ See [scripts/SCRIPTS.md](scripts/SCRIPTS.md) for detailed documentation of:
 
 You can automatically install mods when starting the container by setting the `HYCKER_MOD_ZIP_URL` environment variable with the URL of a ZIP file. The contents of the ZIP will be extracted into `data/mods` before the server starts.
 
-Example in `docker-compose.yml`:
+### Supported URLs
+
+- **Direct ZIP downloads**: Any public URL pointing to a `.zip` file
+- **Google Drive**: Share links from Google Drive (automatically detected and handled)
+
+### Google Drive Setup
+
+1. Upload your mod ZIP to Google Drive
+2. Right-click the file → Share
+3. Set "General access" to **"Anyone with the link"**
+4. Copy the share link (format: `https://drive.google.com/file/d/FILE_ID/view?usp=drive_link`)
+5. Use this URL in `HYCKER_MOD_ZIP_URL`
+
+### Example Configuration
+
+**docker-compose.yml**:
 
 ```yaml
 environment:
-  HYCKER_MOD_ZIP_URL: "https://drive.google.com/uc?export=download&id=1lfIlKi7wztuesSjcO4gJHPvrtMQX2bbE"
+  # Direct download
+  HYCKER_MOD_ZIP_URL: "https://example.com/mods.zip"
+
+  # Google Drive (any format works)
+  HYCKER_MOD_ZIP_URL: "https://drive.google.com/file/d/1lfIlKi7wztuesSjcO4gJHPvrtMQX2bbE/view?usp=drive_link"
 ```
+
+### Features
+
+- ✅ Automatic Google Drive detection and file ID extraction
+- ✅ Handles large files with virus scan confirmation
+- ✅ Supports nested ZIP structures (ZIP within ZIP)
+- ✅ Validates downloaded files before extraction
+- ✅ Flattens directory structure for clean mod installation
 
 This allows you to automate the installation of custom mods on every deployment.
 

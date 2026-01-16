@@ -22,12 +22,25 @@ These scripts are designed to be sourced by [../entrypoint.sh](../entrypoint.sh)
 
 ```bash
 download_mod_zip "https://example.com/mod.zip"
+# Or with Google Drive
+download_mod_zip "https://drive.google.com/file/d/FILE_ID/view?usp=drive_link"
 ```
+
+**Features**:
+
+- **Google Drive Support**: Automatically detects and handles Google Drive URLs
+  - Extracts file ID from various Google Drive URL formats
+  - Uses `gdown` for reliable downloads with large file support
+  - Handles virus scan confirmation pages automatically
+- **Nested ZIP Handling**: Detects and extracts nested ZIP files (common with Google Drive folders)
+- **File Validation**: Verifies downloaded files are valid ZIP archives before extraction
+- **Flat Structure**: Flattens directory structure, copying all files directly to `/hycker/mods`
 
 **Details**:
 
-- The destination is always `data/mods` relative to the project root.
+- The destination is always `/hycker/mods` in the container.
 - Uses a temporary directory in `/tmp` for download and extraction.
+- For Google Drive URLs, the file must be shared publicly ("Anyone with the link can view").
 
 **Integration**:
 
@@ -44,8 +57,10 @@ fi
 
 **Dependencies**:
 
-- `curl` to download the ZIP
-- `unzip` to extract the file
+- `curl` to download non-Google Drive ZIPs
+- `gdown` (Python package) for Google Drive downloads
+- `unzip` to extract files
+- `python3` and `pip3` for gdown installation
 
 ---
 
