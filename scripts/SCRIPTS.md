@@ -32,6 +32,26 @@ download_mod_zip "https://drive.google.com/file/d/FILE_ID/view?usp=drive_link"
   - Extracts file ID from various Google Drive URL formats
   - Uses `gdown` for reliable downloads with large file support
   - Handles virus scan confirmation pages automatically
+- **Google Drive Folder Download Support**:
+
+  - Detects if the provided URL is a Google Drive folder.
+  - Uses `gdown` to download all files in the folder (up to 50 files, due to Google Drive API limitations).
+  - Files are automatically placed in the `mods` directory.
+  - The folder must be shared publicly ("Anyone with the link can view").
+  - Subfolders are not downloaded recursively (gdown limitation).
+  - Requires `gdown` to be installed in your environment. You can install it with:
+    ```bash
+    pip install gdown
+    ```
+  - **Usage Example:**
+    ```bash
+    ./download-mod-zip.sh "https://drive.google.com/drive/folders/<FOLDER_ID>"
+    ```
+    This will download the contents of the folder and place them in the `mods` directory.
+  - **Limitations:**
+    - Only the first 50 files in the folder will be downloaded (Google Drive API limitation).
+    - Subfolders are not downloaded recursively (gdown limitation).
+
 - **Nested ZIP Handling**: Detects and extracts nested ZIP files (common with Google Drive folders)
 - **File Validation**: Verifies downloaded files are valid ZIP archives before extraction
 - **Flat Structure**: Flattens directory structure, copying all files directly to `/hycker/mods`
@@ -61,6 +81,11 @@ fi
 - `gdown` (Python package) for Google Drive downloads
 - `unzip` to extract files
 - `python3` and `pip3` for gdown installation
+
+**Troubleshooting**:
+
+- If you see an error about `gdown` not being installed, install it with `pip install gdown`.
+- If fewer than 50 files are downloaded, check the folder sharing settings and file count.
 
 ---
 
