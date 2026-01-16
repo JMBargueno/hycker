@@ -106,6 +106,29 @@ You can automatically install mods when starting the container by setting the `H
 
 ### Google Drive Setup
 
+#### Google Drive Folder Download Support
+
+You can now download mods directly from Google Drive folders by providing a folder URL. The script will use `gdown` to recursively download the folder contents into the mods directory.
+
+**Note:** There is a limitation of 50 files per folder due to Google Drive API restrictions. Subfolders are not downloaded recursively. The folder must be shared publicly ("Anyone with the link can view").
+
+**Requirements:**
+
+- `gdown` must be installed in your environment. Install it with:
+  ```bash
+  pip install gdown
+  ```
+
+**Example usage:**
+
+```bash
+./scripts/download-mod-zip.sh "https://drive.google.com/drive/folders/<FOLDER_ID>"
+```
+
+This will download the contents of the folder and place them in the `mods` directory.
+
+If you see an error about `gdown` not being installed, install it as shown above. If fewer than 50 files are downloaded, check the folder sharing settings and file count.
+
 1. Upload your mod ZIP to Google Drive
 2. Right-click the file → Share
 3. Set "General access" to **"Anyone with the link"**

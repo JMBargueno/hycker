@@ -15,23 +15,44 @@ download_mod_zip() {
     return 1
   fi
 
-  # Detect and convert Google Drive URLs to direct download format
+  # Detect and handle Google Drive URLs (file or folder)
   if [[ "$ZIP_URL" =~ drive\.google\.com ]]; then
-    echo "[HYCKER] Detected Google Drive URL, converting to direct download format..."
-    
-    # Extract file ID from various Google Drive URL formats
+    echo "[HYCKER] Detected Google Drive URL, checking type..."
+
+    # Detect if it's a folder URL
+    if [[ "$ZIP_URL" =~ /drive/folders/([a-zA-Z0-9_-]+) ]]; then
+      local FOLDER_ID="${BASH_REMATCH[1]}"
+      echo "[HYCKER] Google Drive folder detected. Folder ID: $FOLDER_ID"
+      # Check for gdown
+      if command -v gdown &> /dev/null; then
+        echo "[HYCKER] Using gdown to download folder recursively..."
+        mkdir -p "$MODS_DIR"
+        if gdown --folder "https://drive.google.com/drive/folders/$FOLDER_ID" -O "$MODS_DIR" 2>&1; then
+          echo "[HYCKER] Folder downloaded successfully to $MODS_DIR"
+          return 0
+        else
+          echo "[HYCKER] ERROR: gdown failed to download the folder."
+          return 1
+        fi
+      else
+        echo "[HYCKER] ERROR: gdown is not installed. Please install it to download Google Drive folders."
+        return 1
+      fi
+    fi
+
+    # Extract file ID from various Google Drive file URL formats
     local FILE_ID=""
     if [[ "$ZIP_URL" =~ /file/d/([a-zA-Z0-9_-]+) ]]; then
       FILE_ID="${BASH_REMATCH[1]}"
     elif [[ "$ZIP_URL" =~ id=([a-zA-Z0-9_-]+) ]]; then
       FILE_ID="${BASH_REMATCH[1]}"
     fi
-    
+
     if [ -z "$FILE_ID" ]; then
       echo "[HYCKER] ERROR: Could not extract file ID from Google Drive URL"
       return 1
     fi
-    
+
     echo "[HYCKER] Google Drive File ID: $FILE_ID"
   fi
 
