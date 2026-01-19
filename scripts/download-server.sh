@@ -12,9 +12,12 @@ download_and_extract_server() {
     LOCAL_VERSION=""
     REMOTE_VERSION=""
 
-    # Comprobar versión local y remota si el downloader existe
+    # Check installed version from file, and remote version from downloader
+    VERSION_FILE=".hytale-server-version"
+    if [ -f "$VERSION_FILE" ]; then
+        LOCAL_VERSION=$(cat "$VERSION_FILE")
+    fi
     if [ -f "hytale-downloader-linux-amd64" ]; then
-        LOCAL_VERSION=$(./hytale-downloader-linux-amd64 -print-version 2>/dev/null | grep -Eo '[0-9]{4}\.[0-9]{2}\.[0-9]{2}-[a-z0-9]+')
         REMOTE_VERSION=$(./hytale-downloader-linux-amd64 -check-update 2>/dev/null | grep -Eo '[0-9]{4}\.[0-9]{2}\.[0-9]{2}-[a-z0-9]+')
     fi
 
@@ -68,10 +71,14 @@ download_and_extract_server() {
             echo ""
             echo "[HYCKER] Extracting downloaded file: $ZIP_FILE"
             # Extract quietly (-q flag) to current directory (-d .)
-            unzip -q "$ZIP_FILE" -d .
+            unzip -o -q "$ZIP_FILE" -d .
             # Remove the ZIP file after extraction to save space
             rm -f "$ZIP_FILE"
             echo "[HYCKER] Files extracted successfully!"
+            # Save the installed version to file if available
+            if [ -n "$REMOTE_VERSION" ]; then
+                echo "$REMOTE_VERSION" > "$VERSION_FILE"
+            fi
         fi
         
         # Verify that the server JAR file was extracted successfully
