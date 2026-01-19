@@ -34,7 +34,11 @@ download_and_extract_server() {
 
     if [ "$NEED_UPDATE" = true ]; then
         echo "[HYCKER] =========================================="
-        echo "[HYCKER] Server files not found."
+        if [ -f "Server/HytaleServer.jar" ] && [ -n "$REMOTE_VERSION" ] && [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
+            echo "[HYCKER] Server files found, but a new version is available. Updating to latest release..."
+        else
+            echo "[HYCKER] Server files not found."
+        fi
         echo "[HYCKER] Launching Hytale Downloader..."
         echo "[HYCKER] =========================================="
         echo ""
