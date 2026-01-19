@@ -83,17 +83,30 @@ See [scripts/SCRIPTS.md](scripts/SCRIPTS.md) for detailed documentation of:
 
 ## ⚙️ Environment Variables
 
-| Variable                  | Description                                                                          | Default           | Example                        |
-| ------------------------- | ------------------------------------------------------------------------------------ | ----------------- | ------------------------------ |
-| `HYTALE_ASSETS_PATH`      | Path to the Assets.zip file                                                          | `Assets.zip`      | `Assets.zip`                   |
-| `HYTALE_AUTH_MODE`        | Authentication mode for players                                                      | `authenticated`   | `authenticated` or `offline`   |
-| `HYTALE_BIND_ADDRESS`     | Server bind address and port                                                         | `0.0.0.0:5520`    | `0.0.0.0:5520`                 |
-| `HYTALE_BACKUP_ENABLED`   | Enable automatic backups                                                             | `true`            | `true` or `false`              |
-| `HYTALE_BACKUP_FREQUENCY` | Backup interval in minutes                                                           | `30`              | `30`, `60`, `120`              |
-| `HYTALE_BACKUP_DIR`       | Directory for backup storage                                                         | `/hycker/backups` | `/hycker/backups`              |
-| `HYTALE_DISABLE_SENTRY`   | Disable Sentry crash reporting                                                       | `false`           | `true` or `false`              |
-| `JAVA_OPTS`               | JVM memory and performance options                                                   | `-Xms1G -Xmx4G`   | `-Xms2G -Xmx8G`                |
-| `HYCKER_MOD_ZIP_URL`      | URL of a mod ZIP to download and extract into `data/mods` before starting the server | _(empty)_         | `https://example.com/mods.zip` |
+| Variable                  | Description                                                                                                                                          | Default           | Example                        |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ------------------------------ |
+| `HYTALE_ASSETS_PATH`      | Path to the Assets.zip file                                                                                                                          | `Assets.zip`      | `Assets.zip`                   |
+| `HYTALE_AUTH_MODE`        | Authentication mode for players                                                                                                                      | `authenticated`   | `authenticated` or `offline`   |
+| `HYTALE_BIND_ADDRESS`     | Server bind address and port                                                                                                                         | `0.0.0.0:5520`    | `0.0.0.0:5520`                 |
+| `HYTALE_BACKUP_ENABLED`   | Enable automatic backups                                                                                                                             | `true`            | `true` or `false`              |
+| `HYTALE_BACKUP_FREQUENCY` | Backup interval in minutes                                                                                                                           | `30`              | `30`, `60`, `120`              |
+| `HYTALE_BACKUP_DIR`       | Directory for backup storage                                                                                                                         | `/hycker/backups` | `/hycker/backups`              |
+| `HYTALE_DISABLE_SENTRY`   | Disable Sentry crash reporting                                                                                                                       | `false`           | `true` or `false`              |
+| `JAVA_OPTS`               | JVM memory and performance options                                                                                                                   | `-Xms1G -Xmx4G`   | `-Xms2G -Xmx8G`                |
+| `HYTALE_AUTO_UPDATE`      | If `true`, automatically updates to the latest Hytale server version when available. If `false`, only prints a warning if a new version is detected. | `false`           | `true` or `false`              |
+| `HYCKER_MOD_ZIP_URL`      | URL of a mod ZIP to download and extract into `data/mods` before starting the server                                                                 | _(empty)_         | `https://example.com/mods.zip` |
+
+## 🔄 Automatic Update and Version Check
+
+The container always checks if a new Hytale server version is available before starting. If a new version is detected, a yellow warning will be printed:
+
+```
+[HYCKER] New Hytale version available! Local: <local_version>, Remote: <remote_version>
+```
+
+If the environment variable `HYTALE_AUTO_UPDATE` is set to `true`, the latest version will be downloaded and installed automatically. If set to `false`, only the warning will be shown and the server will not update automatically.
+
+This ensures you are always notified of new releases and can choose whether to update automatically or manually.
 
 ## 🧩 Automatic Mods Download
 

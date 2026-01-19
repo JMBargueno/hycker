@@ -27,6 +27,9 @@ services:
       # Java memory configuration
       JAVA_OPTS: "-Xms1G -Xmx4G"
 
+      # Auto update feature
+      HYTALE_AUTO_UPDATE: "true"
+
     # Volume mounts for persistent data
     volumes:
       # All server data mounted to local ./data directory
