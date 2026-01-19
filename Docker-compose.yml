@@ -2,8 +2,7 @@ version: "3.9"
 
 services:
   hycker:
-    image: jmbargueno/hycker:dev
-    build: .
+    image: jmbargueno/hycker:latest
     container_name: hycker
     restart: unless-stopped
     tty: true
