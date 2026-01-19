@@ -26,7 +26,8 @@ ENV HYTALE_ASSETS_PATH="Assets.zip" \
     HYTALE_BACKUP_ENABLED="true" \
     HYTALE_BACKUP_FREQUENCY="30" \
     HYTALE_DISABLE_SENTRY="false" \
-    JAVA_OPTS="-Xms1G -Xmx4G"
+    JAVA_OPTS="-Xms1G -Xmx4G" \
+    HYTALE_AUTO_UPDATE="false"
 
 # Copy entrypoint script and scripts folder from host to container
 COPY entrypoint.sh /entrypoint.sh

@@ -6,8 +6,33 @@
 # The downloader requires OAuth2 authentication
 
 download_and_extract_server() {
-    # Check if the Hytale server JAR file exists, if not download it
+    # Si HYTALE_AUTO_UPDATE está en true, o el server no existe, forzar descarga
+    AUTO_UPDATE=${HYTALE_AUTO_UPDATE:-false}
+    NEED_UPDATE=false
+    LOCAL_VERSION=""
+    REMOTE_VERSION=""
+
+    # Comprobar versión local y remota si el downloader existe
+    if [ -f "hytale-downloader-linux-amd64" ]; then
+        LOCAL_VERSION=$(./hytale-downloader-linux-amd64 -print-version 2>/dev/null | grep -Eo '[0-9]{4}\.[0-9]{2}\.[0-9]{2}-[a-z0-9]+')
+        REMOTE_VERSION=$(./hytale-downloader-linux-amd64 -check-update 2>/dev/null | grep -Eo '[0-9]{4}\.[0-9]{2}\.[0-9]{2}-[a-z0-9]+')
+    fi
+
+    # Si hay una versión remota y es distinta a la local, avisar en amarillo
+    if [ -n "$REMOTE_VERSION" ] && [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
+        # Yellow: \033[1;33m ... \033[0m
+        echo -e "\033[1;33m[HYCKER] New Hytale version available! Local: $LOCAL_VERSION, Remote: $REMOTE_VERSION\033[0m"
+        if [ "$AUTO_UPDATE" = "true" ]; then
+            NEED_UPDATE=true
+        fi
+    fi
+
+    # Si el server no existe, necesitamos descargar
     if [ ! -f "Server/HytaleServer.jar" ]; then
+        NEED_UPDATE=true
+    fi
+
+    if [ "$NEED_UPDATE" = true ]; then
         echo "[HYCKER] =========================================="
         echo "[HYCKER] Server files not found."
         echo "[HYCKER] Launching Hytale Downloader..."
@@ -27,8 +52,8 @@ download_and_extract_server() {
         echo "[HYCKER] Follow the instructions displayed by the downloader."
         echo ""
         
-        # Execute the Hytale downloader to fetch server files
-        # The downloader is in the current working directory
+
+        # Ejecutar el downloader para obtener los archivos del servidor
         ./hytale-downloader-linux-amd64
         
         # Find the first ZIP file downloaded (usually contains server files)

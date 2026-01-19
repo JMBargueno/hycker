@@ -33,7 +33,6 @@ download_mod_zip "https://drive.google.com/file/d/FILE_ID/view?usp=drive_link"
   - Uses `gdown` for reliable downloads with large file support
   - Handles virus scan confirmation pages automatically
 - **Google Drive Folder Download Support**:
-
   - Detects if the provided URL is a Google Drive folder.
   - Uses `gdown` to download all files in the folder (up to 50 files, due to Google Drive API limitations).
   - Files are automatically placed in the `mods` directory.
@@ -91,19 +90,24 @@ fi
 
 ### download-server.sh
 
-**Purpose**: Automates the download and installation of Hytale server files.
+**Purpose**: Automates the download, update check, and installation of Hytale server files.
 
 **Main Function**: `download_and_extract_server()`
 
 **Workflow**:
 
-1. Checks if `Server/HytaleServer.jar` exists
-2. If not found:
-   - Downloads `hytale-downloader-linux-amd64` from `https://downloader.hytale.com/hytale-downloader.zip`
-   - Extracts and sets execute permissions
-   - Runs the downloader (requires OAuth2 authentication)
-   - Extracts the downloaded ZIP file
-   - Verifies the JAR was extracted successfully
+1. Always checks if a new Hytale server version is available using the downloader tool.
+2. If a new version is available, prints a yellow warning: `[HYCKER] New Hytale version available! Local: <local_version>, Remote: <remote_version>`
+3. If the environment variable `HYTALE_AUTO_UPDATE` is set to `true`, or if the server is missing, automatically downloads and installs the latest version.
+4. Downloads `hytale-downloader-linux-amd64` from `https://downloader.hytale.com/hytale-downloader.zip` if not present.
+5. Extracts and sets execute permissions.
+6. Runs the downloader (requires OAuth2 authentication).
+7. Extracts the downloaded ZIP file.
+8. Verifies the JAR was extracted successfully.
+
+**Environment Variables**:
+
+- `HYTALE_AUTO_UPDATE` - If `true`, automatically updates to the latest server version when available. If `false`, only prints a warning if a new version is detected.
 
 **Dependencies**:
 
@@ -116,6 +120,7 @@ fi
 - The downloader requires OAuth2 authentication on first run
 - Credentials are saved in `.hytale-downloader-credentials.json`
 - The script automatically searches for the first `.zip` file in the directory
+- Always checks for updates and notifies the user in yellow if a new version is available, regardless of auto-update setting
 
 ---
 
