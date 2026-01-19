@@ -9,6 +9,10 @@ download_mod_zip() {
   local ZIP_URL="$1"
   local MODS_DIR="/hycker/mods"
   local TMP_DIR="/tmp/hycker_mod_zip"
+  //TODO: Improve handling of existing files in mods directory
+    # Remove all existing .jar and .zip files in the mods folder before downloading
+    echo "[HYCKER] Removing existing .jar and .zip files in $MODS_DIR..."
+    find "$MODS_DIR" -type f \( -name "*.jar" -o -name "*.zip" \) -exec rm -v {} \;
 
   if [ -z "$ZIP_URL" ]; then
     echo "Usage: download_mod_zip <zip_url>"
