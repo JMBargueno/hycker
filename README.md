@@ -36,7 +36,7 @@ Multi-stage Docker image based on `eclipse-temurin:25-jdk-jammy` that:
 - Minimal dependencies to reduce image size
 - Automatic line ending normalization for Windows/Linux compatibility
 - Health check monitors Java process every 30 seconds
-- Scripts copied to `/opt/hycker-scripts/` for organization
+- Scripts copied to `/opt/hycker-scripts/` for organization.
 
 #### `docker-compose.yml`
 
