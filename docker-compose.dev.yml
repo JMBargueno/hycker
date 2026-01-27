@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  hycker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hycker:dev
+    container_name: hycker-dev
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+    ports:
+      - "5520:5520/udp" # Hytale server port (UDP)
+
+    # Environment variables for server configuration
+    environment:
+      # Hytale server settings
+      HYTALE_ASSETS_PATH: "Assets.zip"
+      HYTALE_AUTH_MODE: "authenticated"
+      HYTALE_BIND_ADDRESS: "0.0.0.0:5520"
+      # Backup configuration
+      HYTALE_BACKUP_ENABLED: "true"
+      HYTALE_BACKUP_FREQUENCY: "30"
+      HYTALE_BACKUP_DIR: "/hycker/backups"
+
+      # Server features
+      HYTALE_DISABLE_SENTRY: "false"
+
+      # Java memory configuration
+      JAVA_OPTS: "-Xms1G -Xmx4G"
+
+      # Auto update feature
+      HYTALE_AUTO_UPDATE: "true"
+      HYTALE_ACCEPT_EARLY_PLUGINS: true
+
+    # Volume mounts for persistent data
+    volumes:
+      # All server data mounted to local ./data directory
+      - ./data:/hycker
+
+    network_mode: bridge
