@@ -60,7 +60,13 @@ fi
 
 # Build Java command using an array to avoid quote escaping issues
 # Start with base Java command and options for heap memory configuration
+
+# Add --accept-early-plugins if HYTALE_ACCEPT_EARLY_PLUGINS is set to true
 declare -a java_args=(java ${JAVA_OPTS} -jar "$SERVER_JAR" --assets "$ASSETS_PATH")
+if [ "${HYTALE_ACCEPT_EARLY_PLUGINS}" = "true" ]; then
+    echo -e "\033[0;33m[WARNING] --accept-early-plugins is enabled. Early plugins will be accepted!\033[0m"
+    java_args+=(--accept-early-plugins)
+fi
 
 # Add bind address for Docker compatibility (default: 0.0.0.0:5520)
 if [ -n "${HYTALE_BIND_ADDRESS}" ]; then

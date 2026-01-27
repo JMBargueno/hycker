@@ -83,20 +83,33 @@ See [scripts/SCRIPTS.md](scripts/SCRIPTS.md) for detailed documentation of:
 
 ## ⚙️ Environment Variables
 
-| Variable                  | Description                                                                                                                                          | Default           | Example                        |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ------------------------------ |
-| `HYTALE_ASSETS_PATH`      | Path to the Assets.zip file                                                                                                                          | `Assets.zip`      | `Assets.zip`                   |
-| `HYTALE_AUTH_MODE`        | Authentication mode for players                                                                                                                      | `authenticated`   | `authenticated` or `offline`   |
-| `HYTALE_BIND_ADDRESS`     | Server bind address and port                                                                                                                         | `0.0.0.0:5520`    | `0.0.0.0:5520`                 |
-| `HYTALE_BACKUP_ENABLED`   | Enable automatic backups                                                                                                                             | `true`            | `true` or `false`              |
-| `HYTALE_BACKUP_FREQUENCY` | Backup interval in minutes                                                                                                                           | `30`              | `30`, `60`, `120`              |
-| `HYTALE_BACKUP_DIR`       | Directory for backup storage                                                                                                                         | `/hycker/backups` | `/hycker/backups`              |
-| `HYTALE_DISABLE_SENTRY`   | Disable Sentry crash reporting                                                                                                                       | `false`           | `true` or `false`              |
-| `JAVA_OPTS`               | JVM memory and performance options                                                                                                                   | `-Xms1G -Xmx4G`   | `-Xms2G -Xmx8G`                |
-| `HYTALE_AUTO_UPDATE`      | If `true`, automatically updates to the latest Hytale server version when available. If `false`, only prints a warning if a new version is detected. | `false`           | `true` or `false`              |
-| `HYCKER_MOD_ZIP_URL`      | URL of a mod ZIP to download and extract into `data/mods` before starting the server                                                                 | _(empty)_         | `https://example.com/mods.zip` |
+| Variable                      | Description                                                                                                                                                                            | Default           | Example                        |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ------------------------------ |
+| `HYTALE_ASSETS_PATH`          | Path to the Assets.zip file                                                                                                                                                            | `Assets.zip`      | `Assets.zip`                   |
+| `HYTALE_AUTH_MODE`            | Authentication mode for players                                                                                                                                                        | `authenticated`   | `authenticated` or `offline`   |
+| `HYTALE_BIND_ADDRESS`         | Server bind address and port                                                                                                                                                           | `0.0.0.0:5520`    | `0.0.0.0:5520`                 |
+| `HYTALE_BACKUP_ENABLED`       | Enable automatic backups                                                                                                                                                               | `true`            | `true` or `false`              |
+| `HYTALE_BACKUP_FREQUENCY`     | Backup interval in minutes                                                                                                                                                             | `30`              | `30`, `60`, `120`              |
+| `HYTALE_BACKUP_DIR`           | Directory for backup storage                                                                                                                                                           | `/hycker/backups` | `/hycker/backups`              |
+| `HYTALE_DISABLE_SENTRY`       | Disable Sentry crash reporting                                                                                                                                                         | `false`           | `true` or `false`              |
+| `JAVA_OPTS`                   | JVM memory and performance options                                                                                                                                                     | `-Xms1G -Xmx4G`   | `-Xms2G -Xmx8G`                |
+| `HYTALE_AUTO_UPDATE`          | If `true`, automatically updates to the latest Hytale server version when available. If `false`, only prints a warning if a new version is detected.                                   | `false`           | `true` or `false`              |
+| `HYCKER_MOD_ZIP_URL`          | URL of a mod ZIP to download and extract into `data/mods` before starting the server                                                                                                   | _(empty)_         | `https://example.com/mods.zip` |
+| `HYTALE_ACCEPT_EARLY_PLUGINS` | If `true`, enables the `--accept-early-plugins` flag when starting the server. Prints a yellow warning: "[WARNING] --accept-early-plugins is enabled. Early plugins will be accepted!" | `false`           | `true`                         |
 
 ## 🔄 Automatic Update and Version Check
+
+## 🧩 Early Plugins Acceptance
+
+If the environment variable `HYTALE_ACCEPT_EARLY_PLUGINS` is set to `true`, the container will start the server with the `--accept-early-plugins` flag. This allows early plugins to be accepted by the server. A yellow warning will be printed at startup:
+
+```
+[WARNING] --accept-early-plugins is enabled. Early plugins will be accepted!
+```
+
+Use this option only if you understand the risks of accepting early plugins.
+
+---
 
 The container always checks if a new Hytale server version is available before starting. If a new version is detected, a yellow warning will be printed:
 
