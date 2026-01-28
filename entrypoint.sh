@@ -11,7 +11,7 @@ echo -e "\033[0;36m|  _  | | || |___| . \\| |___|  _ < \033[0m"
 echo -e "\033[0;36m|_| |_| |_| \\____|_|\\_\\_____|_| \\_\\\\\033[0m"
 echo ""
 echo "=========================================="
-echo "  Hytale Server Docker Container v1.0.11"
+echo "  Hytale Server Docker Container v1.0.10"
 echo -e "  \033[0;33mhttps://github.com/JMBargueno/hycker\033[0m"
 echo "=========================================="
 echo ""
@@ -59,6 +59,7 @@ if [ ! -f "$ASSETS_PATH" ]; then
 fi
 
 # Build Java command using an array to avoid quote escaping issues
+
 # Start with base Java command and options for heap memory configuration
 
 # Add --accept-early-plugins if HYTALE_ACCEPT_EARLY_PLUGINS is set to true
@@ -84,6 +85,15 @@ configure_backup_options java_args
 # Disable Sentry crash reporting if specified
 if [ "${HYTALE_DISABLE_SENTRY}" = "true" ]; then
     java_args+=(--disable-sentry)
+fi
+
+# Append HYTALE_ADDITIONAL_ARGS to JAVA_OPTS if set
+if [ -n "${HYTALE_ADDITIONAL_ARGS}" ]; then
+    # Yellow: \033[1;33m ... \033[0m
+    echo -e "\033[1;33m[HYCKER] Additional Java args: ${HYTALE_ADDITIONAL_ARGS}\033[0m"
+    # shellcheck disable=SC2206
+    additional_args=( ${HYTALE_ADDITIONAL_ARGS} )
+    java_args+=( "${additional_args[@]}" )
 fi
 
 # Display startup information using the external script

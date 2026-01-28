@@ -96,8 +96,19 @@ See [scripts/SCRIPTS.md](scripts/SCRIPTS.md) for detailed documentation of:
 | `HYTALE_AUTO_UPDATE`          | If `true`, automatically updates to the latest Hytale server version when available. If `false`, only prints a warning if a new version is detected.                                   | `false`           | `true` or `false`              |
 | `HYCKER_MOD_ZIP_URL`          | URL of a mod ZIP to download and extract into `data/mods` before starting the server                                                                                                   | _(empty)_         | `https://example.com/mods.zip` |
 | `HYTALE_ACCEPT_EARLY_PLUGINS` | If `true`, enables the `--accept-early-plugins` flag when starting the server. Prints a yellow warning: "[WARNING] --accept-early-plugins is enabled. Early plugins will be accepted!" | `false`           | `true`                         |
+| `HYTALE_ADDITIONAL_ARGS`      | Additional arguments to append to the Java command when starting the server. If set, these will be shown in yellow at startup. Useful for custom JVM or server flags.                  | _(empty)_         | `-Dfile.encoding=UTF-8`        |
 
-## 🔄 Automatic Update and Version Check
+## ➕ Additional Java Arguments
+
+If the environment variable `HYTALE_ADDITIONAL_ARGS` is set, its contents will be appended to the Java command when starting the server. The arguments will be displayed in yellow at startup for visibility. This is useful for passing custom JVM options or server flags.
+
+Example:
+
+```
+HYTALE_ADDITIONAL_ARGS="-Dfile.encoding=UTF-8 -Duser.timezone=UTC"
+```
+
+This will add those options to the Java process that runs the Hytale server.
 
 ## 🧩 Early Plugins Acceptance
 
@@ -110,6 +121,8 @@ If the environment variable `HYTALE_ACCEPT_EARLY_PLUGINS` is set to `true`, the 
 Use this option only if you understand the risks of accepting early plugins.
 
 ---
+
+## 🔄 Automatic Update and Version Check
 
 The container always checks if a new Hytale server version is available before starting. If a new version is detected, a yellow warning will be printed:
 
