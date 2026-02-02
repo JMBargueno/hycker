@@ -34,7 +34,6 @@ services:
       HYTALE_AUTO_UPDATE: "true"
       HYTALE_ACCEPT_EARLY_PLUGINS: true
       HYCKER_MODS_CURSEFORGE_IDS: "1423494,1409811"
-
     # Volume mounts for persistent data
     volumes:
       # All server data mounted to local ./data directory

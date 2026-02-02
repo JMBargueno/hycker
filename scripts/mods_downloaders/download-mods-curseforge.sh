@@ -1,208 +1,247 @@
 #!/bin/bash
-
-# download_mods_curseforge <mod_id1,mod_id2,...>
-# Downloads mods from CurseForge using batch API request
-# Usage: HYTALE_CURSEFORGE_API_KEY=your_key ./download-mods-curseforge.sh <mod_id1,mod_id2,...>
+# CurseForge Mod Downloader - Batch API Version
+# Downloads mods from CurseForge using batch POST API request
+# Usage: ./download-mods-curseforge.sh <mod_id1,mod_id2,...>
 
 set -e
 
+# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m'
 
-function download_mods_curseforge() {
-  local API_KEY="${HYTALE_CURSEFORGE_API_KEY}"
-  local MOD_IDS="$1"
-  local DEST_DIR="data/mods"
-  local BASE_URL="https://api.curseforge.com"
+# Configuration
+API_KEY="${HYTALE_CURSEFORGE_API_KEY}"
+BASE_URL="https://api.curseforge.com"
+DEST_DIR="/hycker/mods"
 
-  # Validate inputs
-  if [[ -z "$API_KEY" ]]; then
-    echo -e "${RED}[HYCKER - CURSEFORGE DOWNLOADER] Error: HYTALE_CURSEFORGE_API_KEY environment variable not set${NC}"
-    return 1
-  fi
-
-  if [[ -z "$MOD_IDS" ]]; then
-    if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-      echo -e "${RED}[HYCKER - CURSEFORGE DOWNLOADER] Usage: $0 <mod_id1,mod_id2,...>${NC}"
-    else
-      echo -e "${RED}[HYCKER - CURSEFORGE DOWNLOADER] Usage: download_mods_curseforge <mod_id1,mod_id2,...>${NC}"
-    fi
-    return 1
-  fi
-
-  # Ensure jq is available
-  if ! command -v jq &> /dev/null; then
-    echo -e "${YELLOW}[HYCKER - CURSEFORGE DOWNLOADER] Installing jq...${NC}"
-    apt-get update && apt-get install -y jq
-  fi
-
-  # Create destination directory
-  mkdir -p "$DEST_DIR"
-
-  # Convert mod IDs to JSON array
-  echo "[HYCKER - CURSEFORGE DOWNLOADER] Processing mod IDs: $MOD_IDS"
-  local MOD_IDS_ARRAY
-  IFS=',' read -ra MOD_IDS_ARRAY <<< "$MOD_IDS"
-  
-  # Build JSON array manually to ensure proper formatting
-  local JSON_ARRAY="["
-  local first=true
-  for mod_id in "${MOD_IDS_ARRAY[@]}"; do
-    mod_id=$(echo "$mod_id" | xargs) # trim whitespace
-    if [[ ! "$mod_id" =~ ^[0-9]+$ ]]; then
-      echo -e "${RED}[HYCKER - CURSEFORGE DOWNLOADER] Warning: Invalid mod ID '$mod_id' (not numeric), skipping${NC}"
-      continue
-    fi
-    if [[ "$first" == true ]]; then
-      first=false
-    else
-      JSON_ARRAY+=","
-    fi
-    JSON_ARRAY+="$mod_id"
-  done
-  JSON_ARRAY+="]"
-
-  if [[ "$JSON_ARRAY" == "[]" ]]; then
-    echo -e "${RED}[HYCKER - CURSEFORGE DOWNLOADER] Error: No valid mod IDs provided${NC}"
-    return 1
-  fi
-
-  # Prepare request body
-  local REQUEST_BODY="{\"modIds\":$JSON_ARRAY,\"filterPcOnly\":true}"
-  echo "[HYCKER - CURSEFORGE DOWNLOADER] Request body: $REQUEST_BODY"
-  echo "[HYCKER - CURSEFORGE DOWNLOADER] API Key (first 10 chars): ${API_KEY:0:10}..."
-  echo "[HYCKER - CURSEFORGE DOWNLOADER] API Key length: ${#API_KEY}"
-
-  # Make API request to get mod information
-  echo "[HYCKER - CURSEFORGE DOWNLOADER] Fetching mod information from CurseForge..."
-  local RESPONSE
-  RESPONSE=$(curl -s -w "\n%{http_code}" \
-    -H "Accept: application/json" \
-    -H "Content-Type: application/json" \
-    -H "x-api-key: $API_KEY" \
-    -X POST "$BASE_URL/v1/mods" \
-    -d "$REQUEST_BODY")
-
-  # Extract HTTP status and body
-  local HTTP_CODE
-  HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-  local BODY
-  BODY=$(echo "$RESPONSE" | head -n -1)
-
-  # Check HTTP status
-  if [[ "$HTTP_CODE" != "200" ]]; then
-    echo -e "${RED}[HYCKER - CURSEFORGE DOWNLOADER] API Error: HTTP $HTTP_CODE${NC}"
-    echo "Response: $BODY"
-    return 1
-  fi
-
-  # Parse response
-  local MODS_DATA
-  if ! MODS_DATA=$(echo "$BODY" | jq -r '.data // empty' 2>/dev/null); then
-    echo -e "${RED}[HYCKER - CURSEFORGE DOWNLOADER] Error: Invalid JSON response${NC}"
-    echo "Response: $BODY"
-    return 1
-  fi
-
-  if [[ -z "$MODS_DATA" || "$MODS_DATA" == "null" ]]; then
-    echo -e "${RED}[HYCKER - CURSEFORGE DOWNLOADER] Error: No 'data' field in API response${NC}"
-    echo "Full response: $BODY"
-    return 1
-  fi
-
-  local MODS_COUNT
-  MODS_COUNT=$(echo "$MODS_DATA" | jq 'length')
-
-  if [[ "$MODS_COUNT" -eq 0 ]]; then
-    echo -e "${RED}[HYCKER - CURSEFORGE DOWNLOADER] No mods found for the provided IDs${NC}"
-    echo "API returned empty data array"
-    return 1
-  fi
-
-  echo -e "${GREEN}[HYCKER - CURSEFORGE DOWNLOADER] Found $MODS_COUNT mod(s)${NC}"
-
-  # Process each mod
-  for ((i=0; i<MODS_COUNT; i++)); do
-    local MOD_INFO
-    MOD_INFO=$(echo "$MODS_DATA" | jq ".[$i]")
+function log() {
+    local level="$1"
+    local message="$2"
     
-    local MOD_ID MOD_NAME MAIN_FILE_ID
-    MOD_ID=$(echo "$MOD_INFO" | jq -r '.id')
-    MOD_NAME=$(echo "$MOD_INFO" | jq -r '.name')
-    MAIN_FILE_ID=$(echo "$MOD_INFO" | jq -r '.mainFileId // empty')
+    case "$level" in
+        "INFO")  echo -e "${BLUE}[INFO]${NC} $message" ;;
+        "OK")    echo -e "${GREEN}[OK]${NC} $message" ;;
+        "WARN")  echo -e "${YELLOW}[WARN]${NC} $message" ;;
+        "ERROR") echo -e "${RED}[ERROR]${NC} $message" ;;
+        *)       echo "$message" ;;
+    esac
+}
 
-    echo ""
-    echo -e "${GREEN}[HYCKER - CURSEFORGE DOWNLOADER] Mod: $MOD_NAME (ID: $MOD_ID, Main File ID: ${MAIN_FILE_ID:-"none"})${NC}"
-
-    if [[ -z "$MAIN_FILE_ID" || "$MAIN_FILE_ID" == "null" ]]; then
-      echo -e "${YELLOW}[HYCKER - CURSEFORGE DOWNLOADER] Warning: Mod '$MOD_NAME' has no main file, skipping${NC}"
-      continue
+function check_dependencies() {
+    log "INFO" "Checking dependencies..."
+    
+    # Check curl
+    if ! command -v curl &> /dev/null; then
+        log "ERROR" "curl is required but not installed"
+        exit 1
     fi
-
-    # Get download URL for main file
-    echo "[HYCKER - CURSEFORGE DOWNLOADER] Getting download URL for file $MAIN_FILE_ID..."
-    local DL_RESPONSE DL_HTTP_CODE DL_BODY DL_URL
-    DL_RESPONSE=$(curl -s -w "\n%{http_code}" \
-      -H "Accept: application/json" \
-      -H "x-api-key: $API_KEY" \
-      "$BASE_URL/v1/mods/$MOD_ID/files/$MAIN_FILE_ID/download-url")
-
-    DL_HTTP_CODE=$(echo "$DL_RESPONSE" | tail -n1)
-    DL_BODY=$(echo "$DL_RESPONSE" | head -n -1)
-
-    if [[ "$DL_HTTP_CODE" != "200" ]]; then
-      echo -e "${RED}[HYCKER - CURSEFORGE DOWNLOADER] Error: Failed to get download URL (HTTP $DL_HTTP_CODE)${NC}"
-      continue
+    
+    # Check jq
+    if ! command -v jq &> /dev/null; then
+        log "WARN" "jq not found, installing..."
+        if command -v apt-get &> /dev/null; then
+            apt-get update -qq && apt-get install -y -qq jq
+        else
+            log "ERROR" "Cannot install jq - apt-get not available"
+            exit 1
+        fi
     fi
+    
+    log "OK" "All dependencies ready"
+}
 
-    DL_URL=$(echo "$DL_BODY" | jq -r '.data // empty')
-    if [[ -z "$DL_URL" || "$DL_URL" == "null" ]]; then
-      echo -e "${RED}[HYCKER - CURSEFORGE DOWNLOADER] Error: Invalid download URL response${NC}"
-      continue
+function fetch_mods_batch() {
+    local mod_ids="$1"
+    
+    # Convert comma-separated string to JSON array
+    local json_array="["
+    local first=true
+    IFS=',' read -ra MOD_ARRAY <<< "$mod_ids"
+    
+    for mod_id in "${MOD_ARRAY[@]}"; do
+        mod_id=$(echo "$mod_id" | xargs)  # trim whitespace
+        
+        # Validate mod ID is numeric
+        if ! [[ "$mod_id" =~ ^[0-9]+$ ]]; then
+            log "WARN" "Skipping invalid mod ID: $mod_id"
+            continue
+        fi
+        
+        if [[ "$first" == true ]]; then
+            first=false
+        else
+            json_array+=","
+        fi
+        json_array+="$mod_id"
+    done
+    json_array+="]"
+    
+    if [[ "$json_array" == "[]" ]]; then
+        log "ERROR" "No valid mod IDs provided"
+        exit 1
     fi
-
-    # Get filename from file info
-    local FILE_INFO_RESPONSE FILE_INFO_HTTP_CODE FILE_INFO_BODY FILE_NAME
-    FILE_INFO_RESPONSE=$(curl -s -w "\n%{http_code}" \
-      -H "Accept: application/json" \
-      -H "x-api-key: $API_KEY" \
-      "$BASE_URL/v1/mods/$MOD_ID/files/$MAIN_FILE_ID")
-
-    FILE_INFO_HTTP_CODE=$(echo "$FILE_INFO_RESPONSE" | tail -n1)
-    FILE_INFO_BODY=$(echo "$FILE_INFO_RESPONSE" | head -n -1)
-
-    if [[ "$FILE_INFO_HTTP_CODE" == "200" ]]; then
-      FILE_NAME=$(echo "$FILE_INFO_BODY" | jq -r '.data.fileName // empty')
+    
+    # Create the JSON payload
+    local json_payload="{\"modIds\": $json_array, \"filterPcOnly\": true}"
+    
+    log "INFO" "Making batch API request for mod IDs: $json_array"
+    log "INFO" "Payload: $json_payload"
+    
+    # Make the batch API request exactly like the working curl command
+    local response
+    response=$(curl -s -w "\n%{http_code}" \
+        --location "$BASE_URL/v1/mods" \
+        --header "x-api-key: $API_KEY" \
+        --header "Content-Type: application/json" \
+        --data "$json_payload")
+    
+    local http_code
+    http_code=$(echo "$response" | tail -n1)
+    local body
+    body=$(echo "$response" | head -n -1)
+    
+    if [[ "$http_code" != "200" ]]; then
+        log "ERROR" "Batch API request failed: HTTP $http_code"
+        log "ERROR" "Response: $body"
+        exit 1
     fi
-
-    if [[ -z "$FILE_NAME" || "$FILE_NAME" == "null" ]]; then
-      FILE_NAME="mod_${MOD_ID}_file_${MAIN_FILE_ID}.jar"
-      echo -e "${YELLOW}[HYCKER - CURSEFORGE DOWNLOADER] Warning: Could not get filename, using: $FILE_NAME${NC}"
+    
+    log "OK" "Batch API request successful"
+    
+    # Parse the response and extract mod data
+    local mods_data
+    mods_data=$(echo "$body" | jq -r '.data[]')
+    
+    if [[ -z "$mods_data" ]]; then
+        log "ERROR" "No mod data found in API response"
+        exit 1
     fi
+    
+    # Process each mod in the response
+    echo "$body" | jq -c '.data[]' | while read -r mod; do
+        download_mod_from_data "$mod"
+    done
+}
 
+function download_mod_from_data() {
+    local mod_data="$1"
+    
+    local mod_id mod_name main_file_id
+    mod_id=$(echo "$mod_data" | jq -r '.id')
+    mod_name=$(echo "$mod_data" | jq -r '.name')
+    main_file_id=$(echo "$mod_data" | jq -r '.mainFileId // empty')
+    
+    log "INFO" "Processing: $mod_name (ID: $mod_id)"
+    
+    if [[ -z "$main_file_id" || "$main_file_id" == "null" ]]; then
+        log "WARN" "Mod '$mod_name' has no main file available"
+        return
+    fi
+    
+    log "INFO" "Main file ID: $main_file_id"
+    
+    # Get download URL
+    local response
+    response=$(curl -s -w "\n%{http_code}" \
+        --location "$BASE_URL/v1/mods/$mod_id/files/$main_file_id/download-url" \
+        --header "x-api-key: $API_KEY")
+    
+    local http_code
+    http_code=$(echo "$response" | tail -n1)
+    local body
+    body=$(echo "$response" | head -n -1)
+    
+    if [[ "$http_code" != "200" ]]; then
+        log "ERROR" "Failed to get download URL for '$mod_name': HTTP $http_code"
+        return
+    fi
+    
+    local download_url
+    download_url=$(echo "$body" | jq -r '.data')
+    
+    if [[ -z "$download_url" || "$download_url" == "null" ]]; then
+        log "ERROR" "No download URL available for '$mod_name'"
+        return
+    fi
+    
+    # Get file name
+    response=$(curl -s -w "\n%{http_code}" \
+        --location "$BASE_URL/v1/mods/$mod_id/files/$main_file_id" \
+        --header "x-api-key: $API_KEY")
+    
+    http_code=$(echo "$response" | tail -n1)
+    body=$(echo "$response" | head -n -1)
+    
+    local filename
+    if [[ "$http_code" == "200" ]]; then
+        filename=$(echo "$body" | jq -r '.data.fileName')
+    fi
+    
+    if [[ -z "$filename" || "$filename" == "null" ]]; then
+        filename="mod_${mod_id}_${main_file_id}.jar"
+        log "WARN" "Using generated filename: $filename"
+    fi
+    
     # Download the file
-    echo "[HYCKER - CURSEFORGE DOWNLOADER] Downloading: $FILE_NAME"
-    if curl -L --fail "$DL_URL" -o "$DEST_DIR/$FILE_NAME"; then
-      echo -e "${GREEN}[HYCKER - CURSEFORGE DOWNLOADER] ✓ Downloaded '$MOD_NAME' as $DEST_DIR/$FILE_NAME${NC}"
-      echo "[HYCKER - CURSEFORGE DOWNLOADER] Summary: '$MOD_NAME' (ID: $MOD_ID) → $FILE_NAME"
+    local filepath="$DEST_DIR/$filename"
+    log "INFO" "Downloading: $filename"
+    
+    if curl -L --fail --progress-bar "$download_url" -o "$filepath"; then
+        log "OK" "Downloaded '$mod_name' → $filename"
     else
-      echo -e "${RED}[HYCKER - CURSEFORGE DOWNLOADER] ✗ Failed to download '$MOD_NAME'${NC}"
+        log "ERROR" "Failed to download '$mod_name'"
     fi
-
-    # Rate limiting
+    
+    # Small delay to be nice to the API
     sleep 0.5
-  done
+}
 
-  echo ""
-  echo -e "${GREEN}[HYCKER - CURSEFORGE DOWNLOADER] Mod downloads completed!${NC}"
+function main() {
+    local mod_ids="$1"
+    
+    echo "========================================"
+    echo "   CurseForge Batch Mod Downloader"
+    echo "========================================"
+    echo
+    
+    # Validate input
+    if [[ -z "$API_KEY" ]]; then
+        log "ERROR" "HYTALE_CURSEFORGE_API_KEY environment variable not set"
+        exit 1
+    fi
+    
+    if [[ -z "$mod_ids" ]]; then
+        log "ERROR" "Usage: $0 <mod_id1,mod_id2,...>"
+        echo "Example: $0 1430860,1445747"
+        exit 1
+    fi
+    
+    log "INFO" "API Key configured (${#API_KEY} chars)"
+    
+    check_dependencies
+    
+    # Create destination directory
+    mkdir -p "$DEST_DIR"
+    log "INFO" "Destination: $DEST_DIR"
+    
+    # Fetch and download mods using batch API
+    fetch_mods_batch "$mod_ids"
+    
+    log "OK" "All downloads completed!"
+}
+
+# Legacy function for compatibility with orchestrator
+function download_mods_curseforge() {
+    main "$1"
 }
 
 # Export function for use by orchestrator
 export -f download_mods_curseforge
 
-# If script is run directly, execute the function
+# Run if script is executed directly
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-  download_mods_curseforge "$1"
+    main "$1"
 fi
