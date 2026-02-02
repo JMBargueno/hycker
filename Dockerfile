@@ -11,6 +11,7 @@ RUN apt-get update && \
     wget \
     unzip \
     curl \
+    jq \
     python3 \
     python3-pip && \
     pip3 install --no-cache-dir gdown && \

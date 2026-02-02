@@ -1,0 +1,14 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Test mods_downloader_main from entrypoint",
+			"type": "shell",
+			"command": "docker-compose -f docker-compose.dev.yml up --build --force-recreate",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		}
+	]
+}

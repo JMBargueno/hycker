@@ -2,8 +2,7 @@
 
 # download_mods_from_zip_url <zip_url>
 # Downloads a ZIP file from a direct URL, extracts it, and copies its contents into data/mods
-# Usage: ./download-mods-from-zip-url.sh <zip_url>
-
+# Usage: download_mods_from_zip_url <zip_url>
 
 set -e
 RED='\033[0;31m'

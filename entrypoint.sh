@@ -29,7 +29,7 @@ cd /hycker
 # Orchestrate mod downloads if any relevant env is set
 if [ -n "$HYCKER_MODS_ZIP_URL" ] || [ -n "$HYCKER_MODS_GDRIVE_URL" ] || [ -n "$HYCKER_MODS_CURSEFORGE_IDS" ]; then
     echo "[HYCKER] Orchestrating mod downloads via mods-downloader.sh"
-    bash /opt/hycker-scripts/mods-downloader.sh
+    mods_downloader_main
 fi
 
 # Download and extract server files if needed

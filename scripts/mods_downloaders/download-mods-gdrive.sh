@@ -2,8 +2,7 @@
 
 # download_mods_gdrive <gdrive_url>
 # Downloads all files from a Google Drive folder URL into data/mods
-# Usage: ./download-mods-gdrive.sh <gdrive_folder_url>
-
+# Usage: download_mods_gdrive <gdrive_folder_url>
 
 set -e
 RED='\033[0;31m'
