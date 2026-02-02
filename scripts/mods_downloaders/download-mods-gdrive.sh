@@ -38,3 +38,5 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   fi
   download_mods_gdrive "$1"
 fi
+
+export -f download_mods_gdrive

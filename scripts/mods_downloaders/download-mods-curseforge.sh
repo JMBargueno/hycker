@@ -56,4 +56,6 @@ for MOD_ID in "${IDS[@]}"; do
   echo "[HYCKER - CURSEFORGE DOWNLOADER] Mod $MOD_ID_TRIM downloaded to $DEST_DIR/$FILE_NAME"
   sleep 1
   # To avoid rate limiting
-done
+  done
+
+  export -f download_mods_curseforge

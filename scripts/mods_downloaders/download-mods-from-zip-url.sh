@@ -34,3 +34,5 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   fi
   download_mods_from_zip_url "$1"
 fi
+
+export -f download_mods_from_zip_url
