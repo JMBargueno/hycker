@@ -51,3 +51,5 @@ jobs:
           tags: |
             jmbargueno/${{ secrets.DOCKERHUB_PROJECT_NAME }}:latest
             jmbargueno/${{ secrets.DOCKERHUB_PROJECT_NAME }}:${{ steps.bump_version.outputs.new_version }}
+          build-args: |
+            HYTALE_CURSEFORGE_API_KEY=${{ secrets.HYTALE_CURSEFORGE_API_KEY }}
