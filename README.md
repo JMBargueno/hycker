@@ -79,24 +79,26 @@ See [scripts/SCRIPTS.md](scripts/SCRIPTS.md) for detailed documentation of:
 - `download-server.sh` - Server file download automation
 - `backup-config.sh` - Backup configuration management
 - `display-startup-info.sh` - Startup information display
-- `download-mod-zip.sh` - Downloads and extracts a mod ZIP into `data/mods` (see Mods section)
 
 ## ⚙️ Environment Variables
 
-| Variable                      | Description                                                                                                                                                                            | Default           | Example                        |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ------------------------------ |
-| `HYTALE_ASSETS_PATH`          | Path to the Assets.zip file                                                                                                                                                            | `Assets.zip`      | `Assets.zip`                   |
-| `HYTALE_AUTH_MODE`            | Authentication mode for players                                                                                                                                                        | `authenticated`   | `authenticated` or `offline`   |
-| `HYTALE_BIND_ADDRESS`         | Server bind address and port                                                                                                                                                           | `0.0.0.0:5520`    | `0.0.0.0:5520`                 |
-| `HYTALE_BACKUP_ENABLED`       | Enable automatic backups                                                                                                                                                               | `true`            | `true` or `false`              |
-| `HYTALE_BACKUP_FREQUENCY`     | Backup interval in minutes                                                                                                                                                             | `30`              | `30`, `60`, `120`              |
-| `HYTALE_BACKUP_DIR`           | Directory for backup storage                                                                                                                                                           | `/hycker/backups` | `/hycker/backups`              |
-| `HYTALE_DISABLE_SENTRY`       | Disable Sentry crash reporting                                                                                                                                                         | `false`           | `true` or `false`              |
-| `JAVA_OPTS`                   | JVM memory and performance options                                                                                                                                                     | `-Xms1G -Xmx4G`   | `-Xms2G -Xmx8G`                |
-| `HYTALE_AUTO_UPDATE`          | If `true`, automatically updates to the latest Hytale server version when available. If `false`, only prints a warning if a new version is detected.                                   | `false`           | `true` or `false`              |
-| `HYCKER_MOD_ZIP_URL`          | URL of a mod ZIP to download and extract into `data/mods` before starting the server                                                                                                   | _(empty)_         | `https://example.com/mods.zip` |
-| `HYTALE_ACCEPT_EARLY_PLUGINS` | If `true`, enables the `--accept-early-plugins` flag when starting the server. Prints a yellow warning: "[WARNING] --accept-early-plugins is enabled. Early plugins will be accepted!" | `false`           | `true`                         |
-| `HYTALE_ADDITIONAL_ARGS`      | Additional arguments to append to the Java command when starting the server. If set, these will be shown in yellow at startup. Useful for custom JVM or server flags.                  | _(empty)_         | `-Dfile.encoding=UTF-8`        |
+| Variable                      | Description                                                                                                                                                                            | Default           | Example                                              |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ---------------------------------------------------- |
+| `HYTALE_ASSETS_PATH`          | Path to the Assets.zip file                                                                                                                                                            | `Assets.zip`      | `Assets.zip`                                         |
+| `HYTALE_AUTH_MODE`            | Authentication mode for players                                                                                                                                                        | `authenticated`   | `authenticated` or `offline`                         |
+| `HYTALE_BIND_ADDRESS`         | Server bind address and port                                                                                                                                                           | `0.0.0.0:5520`    | `0.0.0.0:5520`                                       |
+| `HYTALE_BACKUP_ENABLED`       | Enable automatic backups                                                                                                                                                               | `true`            | `true` or `false`                                    |
+| `HYTALE_BACKUP_FREQUENCY`     | Backup interval in minutes                                                                                                                                                             | `30`              | `30`, `60`, `120`                                    |
+| `HYTALE_BACKUP_DIR`           | Directory for backup storage                                                                                                                                                           | `/hycker/backups` | `/hycker/backups`                                    |
+| `HYTALE_DISABLE_SENTRY`       | Disable Sentry crash reporting                                                                                                                                                         | `false`           | `true` or `false`                                    |
+| `JAVA_OPTS`                   | JVM memory and performance options                                                                                                                                                     | `-Xms1G -Xmx4G`   | `-Xms2G -Xmx8G`                                      |
+| `HYTALE_AUTO_UPDATE`          | If `true`, automatically updates to the latest Hytale server version when available. If `false`, only prints a warning if a new version is detected.                                   | `false`           | `true` or `false`                                    |
+| `HYCKER_MODS_ZIP_URL`         | URL of a mod ZIP to download and extract into `data/mods` before starting the server                                                                                                   | _(empty)_         | `https://example.com/mods.zip`                       |
+| `HYCKER_MODS_GDRIVE_URL`      | Google Drive folder URL to download all mods from before starting the server                                                                                                           | _(empty)_         | `https://drive.google.com/drive/folders/<FOLDER_ID>` |
+| `HYCKER_MODS_CURSEFORGE_IDS`  | Comma-separated list of CurseForge mod IDs to download before starting the server                                                                                                      | _(empty)_         | `12345,67890`                                        |
+| `HYTALE_CURSEFORGE_API_KEY`   | API key for CurseForge API (required for CurseForge mod downloads)                                                                                                                     | _(empty)_         | `your-api-key`                                       |
+| `HYTALE_ACCEPT_EARLY_PLUGINS` | If `true`, enables the `--accept-early-plugins` flag when starting the server. Prints a yellow warning: "[WARNING] --accept-early-plugins is enabled. Early plugins will be accepted!" | `false`           | `true`                                               |
+| `HYTALE_ADDITIONAL_ARGS`      | Additional arguments to append to the Java command when starting the server. If set, these will be shown in yellow at startup. Useful for custom JVM or server flags.                  | _(empty)_         | `-Dfile.encoding=UTF-8`                              |
 
 ## ➕ Additional Java Arguments
 
@@ -136,43 +138,13 @@ This ensures you are always notified of new releases and can choose whether to u
 
 ## 🧩 Automatic Mods Download
 
-You can automatically install mods when starting the container by setting the `HYCKER_MOD_ZIP_URL` environment variable with the URL of a ZIP file. The contents of the ZIP will be extracted into `data/mods` before the server starts.
+Hycker supports automatic mod installation from multiple sources using environment variables. The orchestrator script (`mods-downloader.sh`) will detect and process the following:
 
-### Supported URLs
+- `HYCKER_MODS_ZIP_URL`: Downloads and extracts a ZIP file from a direct URL or Google Drive file/folder into `data/mods`.
+- `HYCKER_MODS_GDRIVE_URL`: Downloads all files from a Google Drive folder into `data/mods` (requires `gdown`).
+- `HYCKER_MODS_CURSEFORGE_IDS`: Downloads mods from CurseForge by numeric mod IDs (requires `HYTALE_CURSEFORGE_API_KEY` and `jq`).
 
-- **Direct ZIP downloads**: Any public URL pointing to a `.zip` file
-- **Google Drive**: Share links from Google Drive (automatically detected and handled)
-
-### Google Drive Setup
-
-#### Google Drive Folder Download Support
-
-You can now download mods directly from Google Drive folders by providing a folder URL. The script will use `gdown` to recursively download the folder contents into the mods directory.
-
-**Note:** There is a limitation of 50 files per folder due to Google Drive API restrictions. Subfolders are not downloaded recursively. The folder must be shared publicly ("Anyone with the link can view").
-
-**Requirements:**
-
-- `gdown` must be installed in your environment. Install it with:
-  ```bash
-  pip install gdown
-  ```
-
-**Example usage:**
-
-```bash
-./scripts/download-mod-zip.sh "https://drive.google.com/drive/folders/<FOLDER_ID>"
-```
-
-This will download the contents of the folder and place them in the `mods` directory.
-
-If you see an error about `gdown` not being installed, install it as shown above. If fewer than 50 files are downloaded, check the folder sharing settings and file count.
-
-1. Upload your mod ZIP to Google Drive
-2. Right-click the file → Share
-3. Set "General access" to **"Anyone with the link"**
-4. Copy the share link (format: `https://drive.google.com/file/d/FILE_ID/view?usp=drive_link`)
-5. Use this URL in `HYCKER_MOD_ZIP_URL`
+You can set one or more of these variables to automate mod installation. Each will be processed in order if set.
 
 ### Example Configuration
 
@@ -180,22 +152,26 @@ If you see an error about `gdown` not being installed, install it as shown above
 
 ```yaml
 environment:
-  # Direct download
-  HYCKER_MOD_ZIP_URL: "https://example.com/mods.zip"
+  # Direct ZIP download
+  HYCKER_MODS_ZIP_URL: "https://example.com/mods.zip"
 
-  # Google Drive (any format works)
-  HYCKER_MOD_ZIP_URL: "https://drive.google.com/file/d/1lfIlKi7wztuesSjcO4gJHPvrtMQX2bbE/view?usp=drive_link"
+  # Google Drive folder
+  HYCKER_MODS_GDRIVE_URL: "https://drive.google.com/drive/folders/<FOLDER_ID>"
+
+  # CurseForge mods by ID
+  HYCKER_MODS_CURSEFORGE_IDS: "12345,67890"
+  HYTALE_CURSEFORGE_API_KEY: "your-api-key"
 ```
 
 ### Features
 
-- ✅ Automatic Google Drive detection and file ID extraction
-- ✅ Handles large files with virus scan confirmation
-- ✅ Supports nested ZIP structures (ZIP within ZIP)
-- ✅ Validates downloaded files before extraction
+- ✅ Automatic Google Drive detection and folder download
+- ✅ Supports direct ZIP and Google Drive file/folder URLs
+- ✅ Supports CurseForge mod downloads by ID (latest file)
 - ✅ Flattens directory structure for clean mod installation
+- ✅ Logs each action with a clear prefix
 
-This allows you to automate the installation of custom mods on every deployment.
+This allows you to automate the installation of custom mods from multiple sources on every deployment.
 
 ### Variable Details
 
