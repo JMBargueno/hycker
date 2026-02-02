@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # mods-downloader.sh
-# Orchestrates all mod downloaders in scripts/mods_downloaders
+# Orchestrates all mod downloaders in /opt/hycker-scripts/mods_downloaders
 # Detects environment variables and calls the corresponding function from each script
 #
 # HYCKER_MODS_ZIP_URL         -> download_mods_from_zip_url
@@ -10,8 +10,7 @@
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-MODS_DIR="$SCRIPT_DIR/mods_downloaders"
+MODS_DIR="/opt/hycker-scripts/mods_downloaders"
 
 # Source all mods_downloaders scripts to export their functions
 source "$MODS_DIR/download-mods-from-zip-url.sh"
