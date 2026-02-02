@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # download_mods_from_zip_url <zip_url>
-# Downloads a ZIP file from a direct URL, extracts it, and copies its contents into data/mods
+# Downloads a ZIP file from a direct URL, extracts it, and copies its contents into /hycker/mods
 # Usage: download_mods_from_zip_url <zip_url>
 
 set -e
@@ -10,7 +10,7 @@ NC='\033[0m'
 
 function download_mods_from_zip_url() {
   ZIP_URL="$1"
-  DEST_DIR="data/mods"
+  DEST_DIR="/hycker/mods"
   TMP_DIR="/tmp/hycker_zip_url_$$"
   mkdir -p "$DEST_DIR"
   mkdir -p "$TMP_DIR"

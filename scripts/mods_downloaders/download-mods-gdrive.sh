@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # download_mods_gdrive <gdrive_url>
-# Downloads all files from a Google Drive folder URL into data/mods
+# Downloads all files from a Google Drive folder URL into /hycker/mods
 # Usage: download_mods_gdrive <gdrive_folder_url>
 
 set -e
@@ -10,7 +10,7 @@ NC='\033[0m'
 
 function download_mods_gdrive() {
   GDRIVE_URL="$1"
-  DEST_DIR="data/mods"
+  DEST_DIR="/hycker/mods"
   TMP_DIR="/tmp/hycker_gdrive_$$"
   mkdir -p "$DEST_DIR"
   mkdir -p "$TMP_DIR"
