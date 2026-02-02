@@ -29,7 +29,9 @@ cd /hycker
 # Orchestrate mod downloads if any relevant env is set
 if [ -n "$HYCKER_MODS_ZIP_URL" ] || [ -n "$HYCKER_MODS_GDRIVE_URL" ] || [ -n "$HYCKER_MODS_CURSEFORGE_IDS" ]; then
     echo "[HYCKER] Orchestrating mod downloads via mods-downloader.sh"
-    mods_downloader_main
+    if ! mods_downloader_main; then
+        echo -e "\033[0;31m[HYCKER] Warning: Mod downloads failed, but continuing with server startup...\033[0m"
+    fi
 fi
 
 # Download and extract server files if needed
