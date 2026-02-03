@@ -11,12 +11,15 @@ RUN apt-get update && \
     wget \
     unzip \
     curl \
+    jq \
     python3 \
     python3-pip && \
     pip3 install --no-cache-dir gdown && \
     mkdir -p /hycker/data && \
     mkdir -p /opt/hycker-scripts && \
     rm -rf /var/lib/apt/lists/*
+
+ARG HYTALE_CURSEFORGE_API_KEY
 
 # Set environment variables for Hytale server configuration
 # These can be overridden at runtime with docker run -e
@@ -27,7 +30,8 @@ ENV HYTALE_ASSETS_PATH="Assets.zip" \
     HYTALE_BACKUP_FREQUENCY="30" \
     HYTALE_DISABLE_SENTRY="false" \
     JAVA_OPTS="-Xms1G -Xmx4G" \
-    HYTALE_AUTO_UPDATE="false"
+    HYTALE_AUTO_UPDATE="false" \
+    HYTALE_CURSEFORGE_API_KEY=${HYTALE_CURSEFORGE_API_KEY}
 
 # Copy entrypoint script and scripts folder from host to container
 COPY entrypoint.sh /entrypoint.sh

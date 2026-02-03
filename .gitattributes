@@ -1,0 +1,6 @@
+# Always use LF for shell scripts
+*.sh text eol=lf
+entrypoint.sh text eol=lf
+
+# Default behavior for all text files
+* text=auto

@@ -20,16 +20,18 @@ echo ""
 source /opt/hycker-scripts/download-server.sh
 source /opt/hycker-scripts/backup-config.sh
 source /opt/hycker-scripts/display-startup-info.sh
-source /opt/hycker-scripts/download-mod-zip.sh
+source /opt/hycker-scripts/mods-downloader.sh
 # Change to the working directory where Hytale server files are located
 cd /hycker
 
 
 
-# Download and extract mods ZIP if the variable is defined
-if [ -n "$HYCKER_MOD_ZIP_URL" ]; then
-    echo "[HYCKER] Downloading mod from $HYCKER_MOD_ZIP_URL"
-    download_mod_zip "$HYCKER_MOD_ZIP_URL"
+# Orchestrate mod downloads if any relevant env is set
+if [ -n "$HYCKER_MODS_ZIP_URL" ] || [ -n "$HYCKER_MODS_GDRIVE_URL" ] || [ -n "$HYCKER_MODS_CURSEFORGE_IDS" ]; then
+    echo "[HYCKER] Orchestrating mod downloads via mods-downloader.sh"
+    if ! mods_downloader_main; then
+        echo -e "\033[0;31m[HYCKER] Warning: Mod downloads failed, but continuing with server startup...\033[0m"
+    fi
 fi
 
 # Download and extract server files if needed

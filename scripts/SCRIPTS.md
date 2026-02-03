@@ -12,79 +12,113 @@ These scripts are designed to be sourced by [../entrypoint.sh](../entrypoint.sh)
 
 ## Scripts
 
-### download-mod-zip.sh
+---
 
-**Purpose**: Downloads a ZIP file from a URL, extracts it, and copies its contents into `data/mods`.
+### mods-downloader.sh
 
-**Main Function**: `download_mod_zip <zip_url>`
+**Purpose**: Orchestrates all mod downloaders in `scripts/mods_downloaders`.
 
 **Usage**:
 
 ```bash
-download_mod_zip "https://example.com/mod.zip"
-# Or with Google Drive
-download_mod_zip "https://drive.google.com/file/d/FILE_ID/view?usp=drive_link"
+source /opt/hycker-scripts/mods-downloader.sh
+# Or run directly:
+bash /opt/hycker-scripts/mods-downloader.sh
 ```
+
+**Behavior**:
+
+- Detects the following environment variables and calls the corresponding script:
+  - `HYCKER_MODS_ZIP_URL` → `download-mods-from-zip-url.sh`
+  - `HYCKER_MODS_GDRIVE_URL` → `download-mods-gdrive.sh`
+  - `HYCKER_MODS_CURSEFORGE_IDS` → `download-mods-curseforge.sh`
+- Each script is called only if its variable is set.
+- Logs each action with a clear prefix.
+
+---
+
+#### mods_downloaders/download-mods-from-zip-url.sh
+
+**Purpose**: Downloads a ZIP file from a direct URL, extracts it, and copies its contents into `data/mods`.
+
+**Usage**:
+
+```bash
+bash scripts/mods_downloaders/download-mods-from-zip-url.sh <zip_url>
+```
+
+**Environment Variable**:
+
+- `HYCKER_MODS_ZIP_URL` (used by the orchestrator)
 
 **Features**:
 
-- **Google Drive Support**: Automatically detects and handles Google Drive URLs
-  - Extracts file ID from various Google Drive URL formats
-  - Uses `gdown` for reliable downloads with large file support
-  - Handles virus scan confirmation pages automatically
-- **Google Drive Folder Download Support**:
-  - Detects if the provided URL is a Google Drive folder.
-  - Uses `gdown` to download all files in the folder (up to 50 files, due to Google Drive API limitations).
-  - Files are automatically placed in the `mods` directory.
-  - The folder must be shared publicly ("Anyone with the link can view").
-  - Subfolders are not downloaded recursively (gdown limitation).
-  - Requires `gdown` to be installed in your environment. You can install it with:
-    ```bash
-    pip install gdown
-    ```
-  - **Usage Example:**
-    ```bash
-    ./download-mod-zip.sh "https://drive.google.com/drive/folders/<FOLDER_ID>"
-    ```
-    This will download the contents of the folder and place them in the `mods` directory.
-  - **Limitations:**
-    - Only the first 50 files in the folder will be downloaded (Google Drive API limitation).
-    - Subfolders are not downloaded recursively (gdown limitation).
+- Downloads and extracts any public ZIP URL
+- Flattens directory structure for clean mod installation
+- All log messages use the `[HYCKER - ZIP DOWNLOADER]` prefix
 
-- **Nested ZIP Handling**: Detects and extracts nested ZIP files (common with Google Drive folders)
-- **File Validation**: Verifies downloaded files are valid ZIP archives before extraction
-- **Flat Structure**: Flattens directory structure, copying all files directly to `/hycker/mods`
+---
 
-**Details**:
+#### mods_downloaders/download-mods-gdrive.sh
 
-- The destination is always `/hycker/mods` in the container.
-- Uses a temporary directory in `/tmp` for download and extraction.
-- For Google Drive URLs, the file must be shared publicly ("Anyone with the link can view").
+**Purpose**: Downloads all files from a Google Drive folder URL into `data/mods`.
 
-**Integration**:
-
-- The script defines the function and can be used standalone or (recommended) as a sourced function.
-- In `entrypoint.sh`, it is automatically called if the environment variable `HYCKER_MOD_ZIP_URL` is set:
+**Usage**:
 
 ```bash
-source /opt/hycker-scripts/download-mod-zip.sh
-if [ -n "$HYCKER_MOD_ZIP_URL" ]; then
-  echo "[HYCKER] Downloading mod from $HYCKER_MOD_ZIP_URL"
-  download_mod_zip "$HYCKER_MOD_ZIP_URL"
-fi
+bash scripts/mods_downloaders/download-mods-gdrive.sh <gdrive_folder_url>
 ```
 
-**Dependencies**:
+**Environment Variable**:
 
-- `curl` to download non-Google Drive ZIPs
-- `gdown` (Python package) for Google Drive downloads
-- `unzip` to extract files
-- `python3` and `pip3` for gdown installation
+- `HYCKER_MODS_GDRIVE_URL` (used by the orchestrator)
 
-**Troubleshooting**:
+**Features**:
 
-- If you see an error about `gdown` not being installed, install it with `pip install gdown`.
-- If fewer than 50 files are downloaded, check the folder sharing settings and file count.
+- Uses `gdown` to download all files in a Google Drive folder
+- Flattens directory structure for clean mod installation
+- All log messages use the `[HYCKER - GDRIVE DOWNLOADER]` prefix
+
+---
+
+#### mods_downloaders/download-mods-curseforge.sh
+
+**Purpose**: Downloads mods from CurseForge using batch API requests with intelligent version management.
+
+**Usage**:
+
+```bash
+HYTALE_CURSEFORGE_API_KEY=your_key bash scripts/mods_downloaders/download-mods-curseforge.sh <mod_id1,mod_id2,...>
+```
+
+**Environment Variables**:
+
+- `HYCKER_MODS_CURSEFORGE_IDS` (used by the orchestrator)
+- `HYTALE_CURSEFORGE_API_KEY` (required for CurseForge API access)
+
+**Features**:
+
+- Uses the CurseForge batch API (`/v1/mods`) for efficient multi-mod downloads
+- Intelligent version management:
+  - **Skip existing**: If exact mod file already exists, skips download (green message)
+  - **Auto-upgrade**: Detects newer versions and automatically upgrades, removing old version
+  - **Prevent downgrade**: Keeps existing mod if it's newer than the download version
+- Version extraction from filenames (supports formats: `1.2.3`, `v1.2.3`, etc.)
+- Requires `jq` for JSON parsing
+- Clean output without progress bars for Docker compatibility
+- All log messages use the `[HYCKER - CurseForge Batch Mod Downloader]` prefix
+
+**Version Comparison Logic**:
+
+1. Extracts base mod name and version from filename
+2. Searches for existing mods with matching base name
+3. Compares versions using semantic version sort
+4. Takes appropriate action (skip/upgrade/keep existing)
+5. Removes old version only after successful download of new version
+
+---
+
+## Scripts
 
 ---
 
@@ -190,35 +224,18 @@ configure_backup_options java_args
 
 ## Integration with entrypoint.sh
 
-All three scripts are loaded in [../entrypoint.sh](../entrypoint.sh) using `source`:
+All scripts are loaded in [../entrypoint.sh](../entrypoint.sh) using `source` or executed directly:
 
 ```bash
 source /opt/hycker-scripts/download-server.sh
 source /opt/hycker-scripts/backup-config.sh
 source /opt/hycker-scripts/display-startup-info.sh
-source /opt/hycker-scripts/download-mod-zip.sh
+# Orchestrate mod downloads (auto-detects env vars):
+bash /opt/hycker-scripts/mods-downloader.sh
 ```
 
-They are then executed in this order:
-
-1. `download_mod_zip` - Downloads and extracts mods if `HYCKER_MOD_ZIP_URL` is set
-2. `download_and_extract_server` - Ensures server files exist
-3. `configure_backup_options` - Configures backup arguments
-4. `display_startup_info` - Shows final configuration
-5. `exec "${java_args[@]}"` - Starts the server
-
-## Modifications and Extensions
-
-To add new functionality:
-
-1. Create a new script in `scripts/`
-2. Export functions with `export -f function_name`
-3. Source the script in [../entrypoint.sh](../entrypoint.sh)
-4. Call the function at the appropriate point in the flow
-
-## Conventions
-
-- All log messages use the `[HYCKER]` prefix
-- Functions are exported for use in the entrypoint
+- All log messages use the `[HYCKER]` or `[HYCKER - ... DOWNLOADER]` prefix
+- Functions are exported for use in the entrypoint where needed
 - `eval` is used to modify arrays by reference
-- Scripts have no direct execution logic (only define functions)
+- The mods-downloader orchestrates all mod download logic via environment variables
+- Scripts in `mods_downloaders` can also be run standalone if needed
