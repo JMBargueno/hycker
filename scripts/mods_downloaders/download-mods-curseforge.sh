@@ -22,10 +22,10 @@ function log() {
     local message="$2"
     
     case "$level" in
-        "INFO")  echo -e "${BLUE}[INFO]${NC} $message" ;;
-        "OK")    echo -e "${GREEN}[OK]${NC} $message" ;;
-        "WARN")  echo -e "${YELLOW}[WARN]${NC} $message" ;;
-        "ERROR") echo -e "${RED}[ERROR]${NC} $message" ;;
+        "INFO")  echo -e "${BLUE}[HYCKER - CurseForge Batch Mod Downloader - INFO]${NC} $message" ;;
+        "OK")    echo -e "${GREEN}[HYCKER - CurseForge Batch Mod Downloader - OK]${NC} $message" ;;
+        "WARN")  echo -e "${YELLOW}[HYCKER - CurseForge Batch Mod Downloader - WARN]${NC} $message" ;;
+        "ERROR") echo -e "${RED}[HYCKER - CurseForge Batch Mod Downloader - ERROR]${NC} $message" ;;
         *)       echo "$message" ;;
     esac
 }
@@ -189,8 +189,8 @@ function download_mod_from_data() {
     local filepath="$DEST_DIR/$filename"
     log "INFO" "Downloading: $filename"
     
-    if curl -L --fail --progress-bar "$download_url" -o "$filepath"; then
-        log "OK" "Downloaded '$mod_name' → $filename"
+    if curl -L --fail -sS "$download_url" -o "$filepath"; then
+        log "OK" "Downloaded '$mod_name' -> $filename"
     else
         log "ERROR" "Failed to download '$mod_name'"
     fi
