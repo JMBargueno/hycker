@@ -181,6 +181,10 @@ ports:
 
 ### Option A
 
+**Using Pre-built Image from Docker Hub**
+
+The Hycker image is available at: [https://hub.docker.com/r/jmbargueno/hycker](https://hub.docker.com/r/jmbargueno/hycker)
+
 1. Copy the Docker-compose example
 
    ```
