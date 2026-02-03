@@ -112,6 +112,71 @@ A Docker container for running a Hytale game server with automated setup, backup
 
 ---
 
+## ⚠️ Requirements
+
+Before running Hycker, ensure your system meets the following requirements:
+
+### 🐋 Software Requirements
+
+| Component      | Version | Purpose                       |
+| -------------- | ------- | ----------------------------- |
+| Docker         | 20.10+  | Container runtime             |
+| Docker Compose | 2.0+    | Multi-container orchestration |
+
+**Installation Guides:**
+
+- [Docker Desktop](https://docs.docker.com/get-docker/) (Windows, macOS)
+- [Docker Engine](https://docs.docker.com/engine/install/) (Linux)
+
+### 💻 System Requirements
+
+**Minimum Specifications:**
+
+- **CPU**: 2 cores
+- **RAM**: 2GB available (4GB recommended)
+- **Storage**: 5GB free disk space
+- **Network**: Port `5520/udp` available
+
+**Recommended Specifications:**
+
+- **CPU**: 4+ cores
+- **RAM**: 8GB+ (adjust `JAVA_OPTS` accordingly)
+- **Storage**: 20GB+ SSD
+- **Network**: Stable internet connection
+
+### 🔑 Additional Requirements
+
+**First-Time Setup:**
+
+- Valid Hytale account for OAuth2 authentication
+- Access to Hytale Launcher credentials
+- Browser for authentication flow
+
+**Optional (for mod downloads):**
+
+- Public Google Drive folder (if using `HYCKER_MODS_GDRIVE_URL`)
+
+### 🌐 Port Configuration
+
+Ensure the following port is available and not blocked by firewall:
+
+```bash
+# Check if port 5520 UDP is available (Linux/macOS)
+sudo lsof -i :5520
+
+# Windows PowerShell
+Get-NetUDPEndpoint -LocalPort 5520
+```
+
+If port `5520` is already in use, modify the external port in `docker-compose.yml`:
+
+```yaml
+ports:
+  - "25565:5520/udp" # Change 25565 to any available port
+```
+
+---
+
 ## 🚀 Quick Start
 
 ### Option A
