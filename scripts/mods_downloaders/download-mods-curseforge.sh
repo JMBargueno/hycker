@@ -126,6 +126,38 @@ function fetch_mods_batch() {
     done
 }
 
+function extract_version() {
+    local filename="$1"
+    # Extract version pattern like 1.2.3, v1.2.3, 1.2, etc.
+    echo "$filename" | grep -oP '(?:v)?[0-9]+\.[0-9]+(?:\.[0-9]+)?' | head -n1
+}
+
+function compare_versions() {
+    local ver1="$1"
+    local ver2="$2"
+    
+    # Remove 'v' prefix if present
+    ver1="${ver1#v}"
+    ver2="${ver2#v}"
+    
+    # Compare versions using sort -V (version sort)
+    if [[ "$(printf '%s\n%s' "$ver1" "$ver2" | sort -V | head -n1)" == "$ver1" ]]; then
+        if [[ "$ver1" == "$ver2" ]]; then
+            echo "equal"
+        else
+            echo "older"
+        fi
+    else
+        echo "newer"
+    fi
+}
+
+function get_mod_base_name() {
+    local filename="$1"
+    # Remove version numbers and file extension to get base name
+    echo "$filename" | sed -E 's/[-_]?v?[0-9]+\.[0-9]+(\.[0-9]+)?.*\.(jar|zip)$//' | sed 's/[-_]$//'
+}
+
 function download_mod_from_data() {
     local mod_data="$1"
     
@@ -142,6 +174,83 @@ function download_mod_from_data() {
     fi
     
     log "INFO" "Main file ID: $main_file_id"
+    
+    # Get file name first to check if it already exists
+    response=$(curl -s -w "\n%{http_code}" \
+        --location "$BASE_URL/v1/mods/$mod_id/files/$main_file_id" \
+        --header "x-api-key: $API_KEY")
+    
+    http_code=$(echo "$response" | tail -n1)
+    body=$(echo "$response" | head -n -1)
+    
+    local filename
+    if [[ "$http_code" == "200" ]]; then
+        filename=$(echo "$body" | jq -r '.data.fileName')
+    fi
+    
+    if [[ -z "$filename" || "$filename" == "null" ]]; then
+        filename="mod_${mod_id}_${main_file_id}.jar"
+        log "WARN" "Using generated filename: $filename"
+    fi
+    
+    # Check for existing mods
+    local filepath="$DEST_DIR/$filename"
+    local base_name
+    base_name=$(get_mod_base_name "$filename")
+    local new_version
+    new_version=$(extract_version "$filename")
+    
+    # Find existing mods with similar base name
+    local existing_mods
+    existing_mods=$(find "$DEST_DIR" -maxdepth 1 -type f \( -name "*.jar" -o -name "*.zip" \) 2>/dev/null || true)
+    
+    local found_exact=false
+    local found_older=false
+    local older_file=""
+    
+    while IFS= read -r existing_file; do
+        [[ -z "$existing_file" ]] && continue
+        
+        local existing_basename
+        existing_basename=$(basename "$existing_file")
+        
+        # Check if it's the exact same file
+        if [[ "$existing_basename" == "$filename" ]]; then
+            log "OK" "Mod '$mod_name' already downloaded: $filename (skipping)"
+            found_exact=true
+            return
+        fi
+        
+        # Check if it's the same mod (base name matches)
+        local existing_base
+        existing_base=$(get_mod_base_name "$existing_basename")
+        
+        if [[ "$existing_base" == "$base_name" ]] || [[ "$existing_basename" =~ $base_name ]]; then
+            local existing_version
+            existing_version=$(extract_version "$existing_basename")
+            
+            if [[ -n "$new_version" ]] && [[ -n "$existing_version" ]]; then
+                local comparison
+                comparison=$(compare_versions "$existing_version" "$new_version")
+                
+                if [[ "$comparison" == "older" ]]; then
+                    log "INFO" "Found older version: $existing_basename (v$existing_version) -> upgrading to v$new_version"
+                    found_older=true
+                    older_file="$existing_file"
+                elif [[ "$comparison" == "equal" ]]; then
+                    log "OK" "Mod '$mod_name' already downloaded (same version): $existing_basename (skipping)"
+                    found_exact=true
+                    return
+                elif [[ "$comparison" == "newer" ]]; then
+                    log "WARN" "Existing version ($existing_version) is newer than download ($new_version), keeping existing"
+                    found_exact=true
+                    return
+                fi
+            fi
+        fi
+    done <<< "$existing_mods"
+    
+    [[ "$found_exact" == true ]] && return
     
     # Get download URL
     local response
@@ -167,30 +276,18 @@ function download_mod_from_data() {
         return
     fi
     
-    # Get file name
-    response=$(curl -s -w "\n%{http_code}" \
-        --location "$BASE_URL/v1/mods/$mod_id/files/$main_file_id" \
-        --header "x-api-key: $API_KEY")
-    
-    http_code=$(echo "$response" | tail -n1)
-    body=$(echo "$response" | head -n -1)
-    
-    local filename
-    if [[ "$http_code" == "200" ]]; then
-        filename=$(echo "$body" | jq -r '.data.fileName')
-    fi
-    
-    if [[ -z "$filename" || "$filename" == "null" ]]; then
-        filename="mod_${mod_id}_${main_file_id}.jar"
-        log "WARN" "Using generated filename: $filename"
-    fi
-    
     # Download the file
-    local filepath="$DEST_DIR/$filename"
     log "INFO" "Downloading: $filename"
     
     if curl -L --fail -sS "$download_url" -o "$filepath"; then
         log "OK" "Downloaded '$mod_name' -> $filename"
+        
+        # Remove older version if found
+        if [[ "$found_older" == true ]] && [[ -n "$older_file" ]]; then
+            log "INFO" "Removing old version: $(basename "$older_file")"
+            rm -f "$older_file"
+            log "OK" "Upgrade complete"
+        fi
     else
         log "ERROR" "Failed to download '$mod_name'"
     fi
