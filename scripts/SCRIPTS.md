@@ -83,7 +83,7 @@ bash scripts/mods_downloaders/download-mods-gdrive.sh <gdrive_folder_url>
 
 #### mods_downloaders/download-mods-curseforge.sh
 
-**Purpose**: Downloads mods from CurseForge by numeric mod IDs (not slugs).
+**Purpose**: Downloads mods from CurseForge using batch API requests with intelligent version management.
 
 **Usage**:
 
@@ -98,9 +98,23 @@ HYTALE_CURSEFORGE_API_KEY=your_key bash scripts/mods_downloaders/download-mods-c
 
 **Features**:
 
-- Uses the CurseForge API to fetch and download the latest file for each mod ID
+- Uses the CurseForge batch API (`/v1/mods`) for efficient multi-mod downloads
+- Intelligent version management:
+  - **Skip existing**: If exact mod file already exists, skips download (green message)
+  - **Auto-upgrade**: Detects newer versions and automatically upgrades, removing old version
+  - **Prevent downgrade**: Keeps existing mod if it's newer than the download version
+- Version extraction from filenames (supports formats: `1.2.3`, `v1.2.3`, etc.)
 - Requires `jq` for JSON parsing
-- All log messages use the `[HYCKER - CURSEFORGE DOWNLOADER]` prefix
+- Clean output without progress bars for Docker compatibility
+- All log messages use the `[HYCKER - CurseForge Batch Mod Downloader]` prefix
+
+**Version Comparison Logic**:
+
+1. Extracts base mod name and version from filename
+2. Searches for existing mods with matching base name
+3. Compares versions using semantic version sort
+4. Takes appropriate action (skip/upgrade/keep existing)
+5. Removes old version only after successful download of new version
 
 ---
 
