@@ -1,241 +1,463 @@
-# Scripts Documentation
+<div align="center">
 
-This folder contains bash scripts used by the Hycker Docker container to configure and run the Hytale server.
+# 📜 Hycker Scripts Documentation
 
-## Overview
+**Modular Bash Scripts for Automated Hytale Server Management**
 
-These scripts are designed to be sourced by [../entrypoint.sh](../entrypoint.sh) and provide modular functionality for:
-
-- Downloading and installing server files
-- Configuring backup options
-- Displaying startup information
-
-## Scripts
+</div>
 
 ---
 
-### mods-downloader.sh
+## 📋 Overview
 
-**Purpose**: Orchestrates all mod downloaders in `scripts/mods_downloaders`.
+This directory contains the core automation scripts that power Hycker's features. Each script is designed to be sourced by [../entrypoint.sh](../entrypoint.sh) and provides modular functionality for server lifecycle management.
 
-**Usage**:
+**Key Capabilities:**
 
-```bash
-source /opt/hycker-scripts/mods-downloader.sh
-# Or run directly:
-bash /opt/hycker-scripts/mods-downloader.sh
+- 🔄 Automated server downloads and version management
+- 🧩 Multi-source mod installation
+- 💾 Configurable backup orchestration
+- 📊 Startup information display
+- 🎯 Intelligent version control
+
+---
+
+## 🗂️ Script Structure
+
+```
+scripts/
+├── download-server.sh                  # OAuth2 server download & version checking
+├── backup-config.sh                    # Backup argument configuration
+├── display-startup-info.sh             # Pre-launch configuration display
+├── mods-downloader.sh                  # Mod download orchestrator
+└── mods_downloaders/
+    ├── download-mods-from-zip-url.sh   # Direct ZIP downloads
+    ├── download-mods-gdrive.sh         # Google Drive integration
+    └── download-mods-curseforge.sh     # CurseForge API client
 ```
 
-**Behavior**:
-
-- Detects the following environment variables and calls the corresponding script:
-  - `HYCKER_MODS_ZIP_URL` → `download-mods-from-zip-url.sh`
-  - `HYCKER_MODS_GDRIVE_URL` → `download-mods-gdrive.sh`
-  - `HYCKER_MODS_CURSEFORGE_IDS` → `download-mods-curseforge.sh`
-- Each script is called only if its variable is set.
-- Logs each action with a clear prefix.
-
 ---
 
-#### mods_downloaders/download-mods-from-zip-url.sh
+## 🔧 Core Scripts
 
-**Purpose**: Downloads a ZIP file from a direct URL, extracts it, and copies its contents into `data/mods`.
+### 📥 download-server.sh
 
-**Usage**:
-
-```bash
-bash scripts/mods_downloaders/download-mods-from-zip-url.sh <zip_url>
-```
-
-**Environment Variable**:
-
-- `HYCKER_MODS_ZIP_URL` (used by the orchestrator)
-
-**Features**:
-
-- Downloads and extracts any public ZIP URL
-- Flattens directory structure for clean mod installation
-- All log messages use the `[HYCKER - ZIP DOWNLOADER]` prefix
-
----
-
-#### mods_downloaders/download-mods-gdrive.sh
-
-**Purpose**: Downloads all files from a Google Drive folder URL into `data/mods`.
-
-**Usage**:
-
-```bash
-bash scripts/mods_downloaders/download-mods-gdrive.sh <gdrive_folder_url>
-```
-
-**Environment Variable**:
-
-- `HYCKER_MODS_GDRIVE_URL` (used by the orchestrator)
-
-**Features**:
-
-- Uses `gdown` to download all files in a Google Drive folder
-- Flattens directory structure for clean mod installation
-- All log messages use the `[HYCKER - GDRIVE DOWNLOADER]` prefix
-
----
-
-#### mods_downloaders/download-mods-curseforge.sh
-
-**Purpose**: Downloads mods from CurseForge using batch API requests with intelligent version management.
-
-**Usage**:
-
-```bash
-HYTALE_CURSEFORGE_API_KEY=your_key bash scripts/mods_downloaders/download-mods-curseforge.sh <mod_id1,mod_id2,...>
-```
-
-**Environment Variables**:
-
-- `HYCKER_MODS_CURSEFORGE_IDS` (used by the orchestrator)
-- `HYTALE_CURSEFORGE_API_KEY` (required for CurseForge API access)
-
-**Features**:
-
-- Uses the CurseForge batch API (`/v1/mods`) for efficient multi-mod downloads
-- Intelligent version management:
-  - **Skip existing**: If exact mod file already exists, skips download (green message)
-  - **Auto-upgrade**: Detects newer versions and automatically upgrades, removing old version
-  - **Prevent downgrade**: Keeps existing mod if it's newer than the download version
-- Version extraction from filenames (supports formats: `1.2.3`, `v1.2.3`, etc.)
-- Requires `jq` for JSON parsing
-- Clean output without progress bars for Docker compatibility
-- All log messages use the `[HYCKER - CurseForge Batch Mod Downloader]` prefix
-
-**Version Comparison Logic**:
-
-1. Extracts base mod name and version from filename
-2. Searches for existing mods with matching base name
-3. Compares versions using semantic version sort
-4. Takes appropriate action (skip/upgrade/keep existing)
-5. Removes old version only after successful download of new version
-
----
-
-## Scripts
-
----
-
-### download-server.sh
-
-**Purpose**: Automates the download, update check, and installation of Hytale server files.
+**Purpose**: Automated Hytale server download, update detection, and installation.
 
 **Main Function**: `download_and_extract_server()`
 
-**Workflow**:
+**Features:**
 
-1. Always checks if a new Hytale server version is available using the downloader tool.
-2. If a new version is available, prints a yellow warning: `[HYCKER] New Hytale version available! Local: <local_version>, Remote: <remote_version>`
-3. If the environment variable `HYTALE_AUTO_UPDATE` is set to `true`, or if the server is missing, automatically downloads and installs the latest version.
-4. Downloads `hytale-downloader-linux-amd64` from `https://downloader.hytale.com/hytale-downloader.zip` if not present.
-5. Extracts and sets execute permissions.
-6. Runs the downloader (requires OAuth2 authentication).
-7. Extracts the downloaded ZIP file.
-8. Verifies the JAR was extracted successfully.
+- ✅ Automatic version checking on every startup
+- 🔔 Visual warnings when new versions are detected
+- 🔄 Optional auto-update via `HYTALE_AUTO_UPDATE=true`
+- 🔐 OAuth2 authentication with credential caching
+- 📦 ZIP extraction and validation
 
-**Environment Variables**:
+**Workflow:**
 
-- `HYTALE_AUTO_UPDATE` - If `true`, automatically updates to the latest server version when available. If `false`, only prints a warning if a new version is detected.
+1. Check local version from `.hytale-server-version` file
+2. Query remote version using `hytale-downloader-linux-amd64`
+3. Compare versions and display warning if outdated
+4. Download if auto-update enabled or server missing
+5. Extract and validate `Server/HytaleServer.jar`
+6. Save new version to tracking file
 
-**Dependencies**:
+**Environment Variables:**
 
-- `wget` - to download the downloader
-- `unzip` - to extract files
-- `find` - to locate the downloaded file
+| Variable             | Description                                  | Default |
+| -------------------- | -------------------------------------------- | ------- |
+| `HYTALE_AUTO_UPDATE` | Automatically download latest server version | `false` |
 
-**Notes**:
+**Dependencies:**
 
-- The downloader requires OAuth2 authentication on first run
-- Credentials are saved in `.hytale-downloader-credentials.json`
-- The script automatically searches for the first `.zip` file in the directory
-- Always checks for updates and notifies the user in yellow if a new version is available, regardless of auto-update setting
+- `wget` - Downloader retrieval
+- `unzip` - Archive extraction
+- `find` - File location
+
+**Example Output:**
+
+```bash
+[HYCKER] New Hytale version available! Local: 2026.01.15-abc123, Remote: 2026.02.03-def456
+[HYCKER] Downloading Hytale Downloader...
+[HYCKER] Files extracted successfully!
+```
 
 ---
 
-### backup-config.sh
+### 💾 backup-config.sh
 
-**Purpose**: Configures Hytale server backup options based on environment variables.
+**Purpose**: Configures server backup arguments based on environment variables.
 
 **Main Function**: `configure_backup_options(java_args_ref)`
 
-**Parameters**:
+**Parameters:**
 
-- `java_args_ref`: Reference to the Java arguments array (modified by reference using `eval`)
+- `java_args_ref` - Reference to Java arguments array (modified via `eval`)
 
-**Environment Variables**:
-
-- `HYTALE_BACKUP_ENABLED` - Enable/disable backups (true/false)
-- `HYTALE_BACKUP_DIR` - Directory where backups are stored
-- `HYTALE_BACKUP_FREQUENCY` - Backup frequency in minutes
-
-**Behavior**:
-
-- If `HYTALE_BACKUP_ENABLED=true`:
-  - Adds `--backup` to Java arguments
-  - Adds `--backup-dir` if defined
-  - Adds `--backup-frequency` if defined
-- If disabled, displays a red message
-
-**Usage Example**:
+**Configuration Logic:**
 
 ```bash
-declare -a java_args=(java -jar server.jar)
-configure_backup_options java_args
-# Result: java_args contains backup arguments
+if HYTALE_BACKUP_ENABLED=true:
+    Add: --backup
+    Add: --backup-dir <path>      (if HYTALE_BACKUP_DIR set)
+    Add: --backup-frequency <min>  (if HYTALE_BACKUP_FREQUENCY set)
 ```
+
+**Environment Variables:**
+
+| Variable                  | Description               | Default           |
+| ------------------------- | ------------------------- | ----------------- |
+| `HYTALE_BACKUP_ENABLED`   | Enable/disable backups    | `true`            |
+| `HYTALE_BACKUP_DIR`       | Backup storage directory  | `/hycker/backups` |
+| `HYTALE_BACKUP_FREQUENCY` | Backup interval (minutes) | `30`              |
+
+**Usage Example:**
+
+```bash
+declare -a java_args=(java -jar HytaleServer.jar)
+configure_backup_options java_args
+# Result: java_args now includes backup flags
+```
+
+**Color Indicators:**
+
+- 🟢 Green: Backup enabled with configuration
+- 🔴 Red: Backup disabled
 
 ---
 
-### display-startup-info.sh
+### 📊 display-startup-info.sh
 
-**Purpose**: Displays configuration information before starting the server.
+**Purpose**: Displays comprehensive server configuration before launch.
 
 **Main Function**: `display_startup_info(server_jar, assets_path, java_args_ref)`
 
-**Parameters**:
+**Displayed Information:**
 
-- `server_jar`: Path to the server JAR file
-- `assets_path`: Path to the Assets.zip file
-- `java_args_ref`: Reference to the Java arguments array
+| Item          | Source                     |
+| ------------- | -------------------------- |
+| JAR Path      | `$server_jar` parameter    |
+| Assets Path   | `$assets_path` parameter   |
+| Bind Address  | `${HYTALE_BIND_ADDRESS}`   |
+| Auth Mode     | `${HYTALE_AUTH_MODE}`      |
+| Backup Status | `${HYTALE_BACKUP_ENABLED}` |
+| Java Options  | `${JAVA_OPTS}`             |
+| Full Command  | Complete `java_args` array |
 
-**Information Displayed**:
+**Example Output:**
 
-- Server JAR path
-- Assets path
-- Bind address (default: `0.0.0.0:5520`)
-- Authentication mode
-- Backup status
-- Java options (`JAVA_OPTS`)
-- Complete Java command to be executed
+```bash
+[HYCKER] Starting Hytale server with configuration:
+[HYCKER] JAR: Server/HytaleServer.jar
+[HYCKER] Assets: Assets.zip
+[HYCKER] Bind Address: 0.0.0.0:5520
+[HYCKER] Auth Mode: authenticated
+[HYCKER] Backup Enabled: true
+[HYCKER] Java Options: -Xms1G -Xmx4G
 
-**Colors**:
-
-- Green (`\033[0;32m`) - Configuration information
-- Yellow (`\033[0;33m`) - Command to execute
-- Reset (`\033[0m`) - Restore normal color
+[HYCKER] Java command to execute:
+[HYCKER] java -Xms1G -Xmx4G -jar Server/HytaleServer.jar --assets Assets.zip --bind 0.0.0.0:5520 --auth-mode authenticated --backup --backup-dir /hycker/backups --backup-frequency 30
+```
 
 ---
 
-## Integration with entrypoint.sh
+## 🧩 Mod Management System
 
-All scripts are loaded in [../entrypoint.sh](../entrypoint.sh) using `source` or executed directly:
+### 🎯 mods-downloader.sh
+
+**Purpose**: Orchestrator that coordinates all mod download sources.
+
+**Detection Logic:**
 
 ```bash
-source /opt/hycker-scripts/download-server.sh
-source /opt/hycker-scripts/backup-config.sh
-source /opt/hycker-scripts/display-startup-info.sh
-# Orchestrate mod downloads (auto-detects env vars):
+if HYCKER_MODS_ZIP_URL set        → Call download-mods-from-zip-url.sh
+if HYCKER_MODS_GDRIVE_URL set     → Call download-mods-gdrive.sh
+if HYCKER_MODS_CURSEFORGE_IDS set → Call download-mods-curseforge.sh
+```
+
+**Features:**
+
+- ✅ Environment variable auto-detection
+- 🔀 Sequential multi-source processing
+- 📝 Consistent logging prefixes
+- 🛡️ Error handling with fallback to server startup
+
+**Usage:**
+
+```bash
+# Sourced by entrypoint.sh
+source /opt/hycker-scripts/mods-downloader.sh
+
+# Or direct execution
 bash /opt/hycker-scripts/mods-downloader.sh
 ```
 
-- All log messages use the `[HYCKER]` or `[HYCKER - ... DOWNLOADER]` prefix
-- Functions are exported for use in the entrypoint where needed
-- `eval` is used to modify arrays by reference
-- The mods-downloader orchestrates all mod download logic via environment variables
-- Scripts in `mods_downloaders` can also be run standalone if needed
+#### 📦 download-mods-from-zip-url.sh
+
+**Purpose**: Downloads and extracts mods from direct ZIP URLs.
+
+**Function**: `download_mods_from_zip_url(zip_url)`
+
+**Process Flow:**
+
+1. Create temporary directory
+2. Download ZIP using `curl -L`
+3. Extract to temp location
+4. Flatten directory structure
+5. Copy all files (except `.zip`) to `/hycker/mods`
+6. Cleanup temporary files
+
+**Environment Variable:**
+
+- `HYCKER_MODS_ZIP_URL` - Direct URL to ZIP file
+
+**Command-Line Usage:**
+
+```bash
+bash download-mods-from-zip-url.sh "https://example.com/mods.zip"
+```
+
+**Example Output:**
+
+```
+[HYCKER - ZIP DOWNLOADER] Downloading ZIP from https://example.com/mods.zip ...
+[HYCKER - ZIP DOWNLOADER] Files extracted to /hycker/mods
+```
+
+#### 🌐 download-mods-gdrive.sh
+
+**Purpose**: Bulk download from Google Drive shared folders.
+
+**Function**: `download_mods_gdrive(gdrive_folder_url)`
+
+**Process Flow:**
+
+1. Check for `gdown` installation (auto-install via pip)
+2. Download entire folder using `gdown --folder`
+3. Flatten directory structure
+4. Copy all files to `/hycker/mods`
+5. Cleanup temporary files
+
+**Environment Variable:**
+
+- `HYCKER_MODS_GDRIVE_URL` - Google Drive folder URL
+
+**Requirements:**
+
+- Python 3 with pip
+- `gdown` package (auto-installed)
+
+**Command-Line Usage:**
+
+```bash
+bash download-mods-gdrive.sh "https://drive.google.com/drive/folders/1A2B3C4D5E"
+```
+
+**Example Output:**
+
+```
+[HYCKER - GDRIVE DOWNLOADER] Downloading all files from Google Drive folder...
+[HYCKER - GDRIVE DOWNLOADER] Files downloaded to /hycker/mods
+```
+
+#### 🔥 download-mods-curseforge.sh
+
+**Purpose**: Intelligent CurseForge mod downloads with version management.
+
+**Function**: `download_mods_curseforge(mod_ids)`
+
+**Advanced Features:**
+
+#### 🎯 Batch API Requests
+
+- Uses `/v1/mods` POST endpoint for efficient multi-mod queries
+- Single API call for multiple mods
+- Reduced API rate limit impact
+
+#### 🧠 Intelligent Version Management
+
+| Scenario      | Action                            | Message Color |
+| ------------- | --------------------------------- | ------------- |
+| Exact match   | Skip download                     | 🟢 Green      |
+| Older version | Download new + delete old         | 🔵 Blue       |
+| Newer version | Keep existing (prevent downgrade) | 🟡 Yellow     |
+| Same version  | Skip download                     | 🟢 Green      |
+
+#### 📊 Version Comparison
+
+```bash
+# Supported formats:
+mod-1.2.3.jar
+mod-v1.2.3.jar
+awesome-mod-2.1.jar
+plugin_1.0.0-beta.jar
+
+# Extraction pattern:
+(?:v)?[0-9]+\.[0-9]+(?:\.[0-9]+)?
+```
+
+**Environment Variables:**
+
+| Variable                     | Required | Description             |
+| ---------------------------- | -------- | ----------------------- |
+| `HYCKER_MODS_CURSEFORGE_IDS` | Yes      | Comma-separated mod IDs |
+| `HYTALE_CURSEFORGE_API_KEY`  | No       | CurseForge API key      |
+
+**Dependencies:**
+
+- `curl` - API requests
+- `jq` - JSON parsing (auto-installed)
+
+**Command-Line Usage:**
+
+```bash
+HYTALE_CURSEFORGE_API_KEY="your_key" \
+bash download-mods-curseforge.sh "1423494,1409811"
+```
+
+**Example Output:**
+
+```
+========================================
+   CurseForge Batch Mod Downloader
+========================================
+
+[HYCKER - CurseForge Batch Mod Downloader - INFO] Making batch API request for mod IDs: [1423494,1409811]
+[HYCKER - CurseForge Batch Mod Downloader - OK] Batch API request successful
+[HYCKER - CurseForge Batch Mod Downloader - INFO] Processing: Awesome Mod (ID: 1423494)
+[HYCKER - CurseForge Batch Mod Downloader - INFO] Found older version: awesome-mod-1.0.0.jar (v1.0.0) -> upgrading to v1.1.0
+[HYCKER - CurseForge Batch Mod Downloader - OK] Downloaded 'Awesome Mod' -> awesome-mod-1.1.0.jar
+[HYCKER - CurseForge Batch Mod Downloader - INFO] Removing old version: awesome-mod-1.0.0.jar
+[HYCKER - CurseForge Batch Mod Downloader - OK] Upgrade complete
+[HYCKER - CurseForge Batch Mod Downloader - OK] All downloads completed!
+```
+
+**Error Handling:**
+
+- Invalid mod IDs (non-numeric) are skipped with warnings
+- HTTP errors display status codes and response bodies
+- Missing download URLs trigger error messages
+- Failed downloads don't interrupt batch processing
+
+---
+
+## 🔗 Integration Architecture
+
+### Entrypoint Integration
+
+All scripts are loaded by [../entrypoint.sh](../entrypoint.sh):
+
+```bash
+#!/bin/bash
+set -e
+
+# Source utility scripts
+source /opt/hycker-scripts/download-server.sh
+source /opt/hycker-scripts/backup-config.sh
+source /opt/hycker-scripts/display-startup-info.sh
+source /opt/hycker-scripts/mods-downloader.sh
+
+cd /hycker
+
+# Orchestrate mod downloads
+if [ -n "$HYCKER_MODS_ZIP_URL" ] || [ -n "$HYCKER_MODS_GDRIVE_URL" ] || [ -n "$HYCKER_MODS_CURSEFORGE_IDS" ]; then
+    mods_downloader_main
+fi
+
+# Download server if needed
+download_and_extract_server
+
+# Build Java command
+declare -a java_args=(java ${JAVA_OPTS} -jar "$SERVER_JAR" --assets "$ASSETS_PATH")
+configure_backup_options java_args
+display_startup_info "$SERVER_JAR" "$ASSETS_PATH" java_args
+
+# Start server
+exec "${java_args[@]}"
+```
+
+### Function Exports
+
+All main functions are exported for cross-script usage:
+
+```bash
+export -f download_and_extract_server
+export -f configure_backup_options
+export -f display_startup_info
+export -f download_mods_from_zip_url
+export -f download_mods_gdrive
+export -f download_mods_curseforge
+```
+
+---
+
+## 🎨 Logging Standards
+
+All scripts follow consistent logging patterns:
+
+| Prefix                                       | Purpose                    |
+| -------------------------------------------- | -------------------------- |
+| `[HYCKER]`                                   | General container messages |
+| `[HYCKER - ZIP DOWNLOADER]`                  | ZIP download operations    |
+| `[HYCKER - GDRIVE DOWNLOADER]`               | Google Drive operations    |
+| `[HYCKER - CurseForge Batch Mod Downloader]` | CurseForge operations      |
+
+**Color Coding:**
+
+- 🔵 Blue (`\033[0;34m`) - Informational messages
+- 🟢 Green (`\033[0;32m`) - Success/OK operations
+- 🟡 Yellow (`\033[1;33m`) - Warnings
+- 🔴 Red (`\033[0;31m`) - Errors
+- ⚪ Reset (`\033[0m`) - Normal text
+
+---
+
+## 🛠️ Development Guidelines
+
+### Adding New Scripts
+
+1. Create script in `/scripts/` or `/scripts/mods_downloaders/`
+2. Add shebang: `#!/bin/bash`
+3. Use `set -e` for error handling
+4. Export main function with `export -f`
+5. Add to `entrypoint.sh` sourcing
+6. Document in this file
+
+### Testing Scripts
+
+```bash
+# Individual script testing
+bash scripts/download-server.sh
+
+# Mod downloader testing
+HYCKER_MODS_ZIP_URL="https://example.com/mods.zip" \
+bash scripts/mods_downloaders/download-mods-from-zip-url.sh
+
+# Full integration testing
+docker-compose -f docker-compose.dev.yml up --build
+```
+
+---
+
+## 📝 Script Reference Table
+
+| Script                          | Type         | Exports Function | Used By         |
+| ------------------------------- | ------------ | ---------------- | --------------- |
+| `download-server.sh`            | Core         | ✅ Yes           | entrypoint.sh   |
+| `backup-config.sh`              | Core         | ✅ Yes           | entrypoint.sh   |
+| `display-startup-info.sh`       | Core         | ✅ Yes           | entrypoint.sh   |
+| `mods-downloader.sh`            | Orchestrator | ✅ Yes           | entrypoint.sh   |
+| `download-mods-from-zip-url.sh` | Mod Loader   | ✅ Yes           | mods-downloader |
+| `download-mods-gdrive.sh`       | Mod Loader   | ✅ Yes           | mods-downloader |
+| `download-mods-curseforge.sh`   | Mod Loader   | ✅ Yes           | mods-downloader |
+
+---
+
+<div align="center">
+
+**🔗 Related Documentation**
+
+[Main README](../README.md) • [Entrypoint Script](../entrypoint.sh) • [Docker Compose](../docker-compose.yml)
+
+</div>
