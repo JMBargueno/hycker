@@ -37,12 +37,23 @@ fi
 # Download and extract server files if needed
 download_and_extract_server
 
-# Double-check that the server JAR file exists before starting
-if [ -f "Server/HytaleServer.jar" ]; then
-    SERVER_JAR="Server/HytaleServer.jar"
+## Support custom server launcher path via SERVER_LAUNCHER_PATH env
+if [ -n "$SERVER_LAUNCHER_PATH" ]; then
+    if [ -f "$SERVER_LAUNCHER_PATH" ]; then
+        SERVER_JAR="$SERVER_LAUNCHER_PATH"
+        ADDITIONAL_SERVER_JAR_ARG="--server-jar Server/HytaleServer.jar"
+    else
+        echo "[HYCKER] ERROR: Custom server launcher not found at $SERVER_LAUNCHER_PATH!"
+        exit 1
+    fi
 else
-    echo "[HYCKER] ERROR: HytaleServer.jar not found!"
-    exit 1
+    # Double-check that the default server JAR file exists before starting
+    if [ -f "Server/HytaleServer.jar" ]; then
+        SERVER_JAR="Server/HytaleServer.jar"
+    else
+        echo "[HYCKER] ERROR: HytaleServer.jar not found!"
+        exit 1
+    fi
 fi
 
 # Set the path to the Assets.zip file
@@ -64,8 +75,11 @@ fi
 
 # Start with base Java command and options for heap memory configuration
 
-# Add --accept-early-plugins if HYTALE_ACCEPT_EARLY_PLUGINS is set to true
 declare -a java_args=(java ${JAVA_OPTS} -jar "$SERVER_JAR" --assets "$ASSETS_PATH")
+# If ADDITIONAL_SERVER_JAR_ARG is set, append it
+if [ -n "$ADDITIONAL_SERVER_JAR_ARG" ]; then
+    java_args+=( $ADDITIONAL_SERVER_JAR_ARG )
+fi
 if [ "${HYTALE_ACCEPT_EARLY_PLUGINS}" = "true" ]; then
     echo -e "\033[0;33m[WARNING] --accept-early-plugins is enabled. Early plugins will be accepted!\033[0m"
     java_args+=(--accept-early-plugins)
