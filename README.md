@@ -285,6 +285,7 @@ Press `Ctrl+P` then `Ctrl+Q` to detach without stopping the server.
 | `HYTALE_CURSEFORGE_API_KEY`   | API key for CurseForge API (optional for custom builds)                                                                                                                                | _(empty)_         | `your-api-key`                                       |
 | `HYTALE_ACCEPT_EARLY_PLUGINS` | If `true`, enables the `--accept-early-plugins` flag when starting the server. Prints a yellow warning: "[WARNING] --accept-early-plugins is enabled. Early plugins will be accepted!" | `false`           | `true`                                               |
 | `HYTALE_ADDITIONAL_ARGS`      | Additional arguments to append to the Java command when starting the server. If set, these will be shown in yellow at startup. Useful for custom JVM or server flags.                  | _(empty)_         | `-Dfile.encoding=UTF-8`                              |
+| `SERVER_LAUNCHER_PATH`        | Path to custom server launcher JAR. If set, overrides default `Server/HytaleServer.jar`. Useful for custom builds or renamed launchers. (Check de docker-compose.dev.yml example)      | _(empty)_         | `/hycker-custom/Hyinit-X.X.X.jar`                    |
 
 ## ➕ Additional Java Arguments
 

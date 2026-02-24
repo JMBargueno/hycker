@@ -23,7 +23,8 @@ services:
       HYTALE_BACKUP_ENABLED: "true"
       HYTALE_BACKUP_FREQUENCY: "30"
       HYTALE_BACKUP_DIR: "/hycker/backups"
-
+      # Custom server launcher path (optional)
+      SERVER_LAUNCHER_PATH: "/hycker-custom/Hyinit-0.1.3.jar"
       # Server features
       HYTALE_DISABLE_SENTRY: "false"
 
@@ -37,5 +38,6 @@ services:
     volumes:
       # All server data mounted to local ./data directory
       - ./data:/hycker
+      - ./custom:/hycker-custom
 
     network_mode: bridge
