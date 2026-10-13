@@ -48,39 +48,104 @@ scripts/
 
 **Features:**
 
-- ✅ Automatic version checking on every startup
+- ✅ Automatic game version check on every startup (`-print-version`)
 - 🔔 Visual warnings when new versions are detected
 - 🔄 Optional auto-update via `HYTALE_AUTO_UPDATE=true`
-- 🔐 OAuth2 authentication with credential caching
-- 📦 ZIP extraction and validation
+- 🔐 OAuth2 authentication with credential caching (`.hytale-downloader-credentials.json`)
+- 📦 Download to an explicit path (`-download-path`), ZIP extraction and validation
+- 🛡️ Fails loudly: downloader, `wget` and `unzip` errors stop the startup with a clear message
+- 🚫 Never blocks an already-installed server waiting for a login (unless you ask it to)
+- 🧪 Optional patchline selection via `HYTALE_PATCHLINE`
 
 **Workflow:**
 
-1. Check local version from `.hytale-server-version` file
-2. Query remote version using `hytale-downloader-linux-amd64`
-3. Compare versions and display warning if outdated
-4. Download if auto-update enabled or server missing
-5. Extract and validate `Server/HytaleServer.jar`
-6. Save new version to tracking file
+1. Read the local version from the `.hytale-server-version` file
+2. If the downloader binary exists, query the remote **game** version with `hytale-downloader-linux-amd64 -print-version`
+3. Compare versions and display a warning if the server is outdated
+4. Mark an update as needed if `HYTALE_AUTO_UPDATE=true` and a newer version exists, or if `Server/HytaleServer.jar` is missing
+5. If no saved credentials exist and the server is already installed, skip the update with a warning (unless `HYTALE_WAIT_FOR_AUTH=true`)
+6. Download the downloader if needed, then run it with `-download-path .hytale-server-download.zip` (exit with an error if it fails)
+7. Extract the ZIP and remove it
+8. Save the new version to the tracking file (on a first install, the version is queried after the download)
+9. Validate that `Server/HytaleServer.jar` exists
+
+> ℹ️ The downloader's `-check-update` flag checks for updates of the **downloader itself**, not of the game server, so this script does not use it. All downloader calls use `-skip-update-check` to avoid the automatic self-update check on every startup.
 
 **Environment Variables:**
 
-| Variable             | Description                                  | Default |
-| -------------------- | -------------------------------------------- | ------- |
-| `HYTALE_AUTO_UPDATE` | Automatically download latest server version | `false` |
+| Variable               | Description                                                                                                                      | Default            |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `HYTALE_AUTO_UPDATE`   | Automatically download the latest server version                                                                                 | `false`            |
+| `HYTALE_PATCHLINE`     | Release channel to use (e.g. `pre-release`)                                                                                      | _(normal release)_ |
+| `HYTALE_WAIT_FOR_AUTH` | With no saved credentials and the server already installed, wait for the OAuth2 login instead of skipping the update (see below) | `false`            |
 
 **Dependencies:**
 
 - `wget` - Downloader retrieval
 - `unzip` - Archive extraction
-- `find` - File location
+
+#### 🔐 Authentication & Credentials
+
+The downloader uses an OAuth2 device-code login: it prints a URL and an authorization code, and you open the URL in any browser (your PC or phone, not necessarily the server).
+
+- Credentials are stored in `.hytale-downloader-credentials.json`
+- The downloader **rewrites this file whenever the token is refreshed**, so it must live in a **persistent, writable volume** (not mounted read-only)
+- If the file is lost, you will need to log in again
+- Add it to `.gitignore` if the directory is under Git
+
+**Recommended setup (log in once, then everything is automatic):**
+
+```yaml
+# docker-compose.yml (excerpt)
+services:
+  hytale:
+    volumes:
+      - ./data:/hycker # keeps .hytale-downloader-credentials.json between restarts
+```
+
+```bash
+# First run only: authenticate interactively
+docker compose run --rm -it hytale
+```
+
+**Without a terminal** (hosting panels, orchestrators): start with `HYTALE_WAIT_FOR_AUTH=true`, read the login URL and code from `docker logs -f`, and complete the login. The credentials are then saved for later restarts.
+
+**Behavior when credentials are missing:**
+
+| Situation                                      | Behavior                                                    |
+| ---------------------------------------------- | ----------------------------------------------------------- |
+| Server not installed (first install)           | Proceeds with the download and shows the login URL and code |
+| Server installed, `HYTALE_WAIT_FOR_AUTH=false` | Skips the update with a warning, server starts normally     |
+| Server installed, `HYTALE_WAIT_FOR_AUTH=true`  | Waits for the login, then updates                           |
+
+> ⚠️ If a login code expires before you authenticate, the downloader fails and the script exits with an error. With `restart: unless-stopped`, the container will loop requesting new codes until you complete the login.
+
+**Troubleshooting:**
+
+| Problem                              | Solution                                                                          |
+| ------------------------------------ | --------------------------------------------------------------------------------- |
+| Authentication error / 401           | Delete `.hytale-downloader-credentials.json` and run again                        |
+| Device code expired                  | Restart to get a new authorization code                                           |
+| Checksum mismatch                    | Retry the download                                                                |
+| 404 Not Found                        | Check the patchline name (`HYTALE_PATCHLINE`) and your access                     |
+| "could not determine remote version" | Check network and credentials; the downloader output is printed below the warning |
 
 **Example Output:**
 
 ```bash
 [HYCKER] New Hytale version available! Local: 2026.01.15-abc123, Remote: 2026.02.03-def456
-[HYCKER] Downloading Hytale Downloader...
+[HYCKER] Server files found, but a new version is available. Updating to latest release...
+[HYCKER] Launching Hytale Downloader...
+[HYCKER] Extracting downloaded file: .hytale-server-download.zip
 [HYCKER] Files extracted successfully!
+```
+
+**Example Output (update skipped, no saved credentials):**
+
+```bash
+[HYCKER] New Hytale version available! Local: 2026.01.15-abc123, Remote: 2026.02.03-def456
+[HYCKER] WARNING: update skipped. No saved credentials (.hytale-downloader-credentials.json).
+[HYCKER] Authenticate once (docker run -it) or set HYTALE_WAIT_FOR_AUTH=true and check the logs for the login URL and code.
 ```
 
 ---
@@ -427,8 +492,8 @@ All scripts follow consistent logging patterns:
 ### Testing Scripts
 
 ```bash
-# Individual script testing
-bash scripts/download-server.sh
+# Server download script (defines a function, so source it and call it)
+bash -c 'source scripts/download-server.sh && download_and_extract_server'
 
 # Mod downloader testing
 HYCKER_MODS_ZIP_URL="https://example.com/mods.zip" \
