@@ -6,7 +6,233 @@
 
 A Docker container for running a Hytale game server with automated setup, backup support, and easy configuration through environment variables.
 
+## ✨ Features
+
+### 🔄 Automated Server Management
+
+**OAuth2 Server Download**
+
+- First-run automatic server file download via Hytale Downloader
+- Secure OAuth2 authentication with credential caching
+- Persistent `.hytale-downloader-credentials.json` for future updates
+
+**Version Control & Auto-Update**
+
+- Automatic version checking on every startup
+- Visual warnings when new versions are available
+- Optional auto-update via `HYTALE_AUTO_UPDATE=true`
+- Version tracking in `.hytale-server-version` file
+
+**Health Monitoring**
+
+- Built-in health checks every 30 seconds
+- Java process monitoring
+- 60-second startup grace period
+- 3 retry attempts before marking unhealthy
+
+### 🧩 Plugin & Mod Management
+
+**Multiple Mod Sources**
+
+- **ZIP Downloads**: Direct URL file downloads
+- **Google Drive**: Bulk folder downloads with `gdown` integration
+- **CurseForge API**: Batch mod downloads by ID with intelligent versioning
+- Automatic extraction and flattening of directory structures
+- Orchestrated installation via `mods-downloader.sh`
+
+**Plugin Configuration**
+
+- Early plugin acceptance via `HYTALE_ACCEPT_EARLY_PLUGINS`
+- Visual warnings for potentially risky configurations
+- Additional Java arguments support via `HYTALE_ADDITIONAL_ARGS`
+
+### 💾 Backup & Data Persistence
+
+**Automated Backups**
+
+- Configurable backup intervals (default: 30 minutes)
+- Custom backup directory support
+- Toggle backups on/off at runtime
+- World data and configuration preservation
+
+**Data Management**
+
+- Persistent volume mounting (`./data:/hycker`)
+- Separate directories for logs, mods, universe, and backups
+- Configuration files: `config.json`, `bans.json`, `whitelist.json`, `permissions.json`
+
+### 🔒 Security & Authentication
+
+**Player Authentication**
+
+- Authenticated mode (default): Requires valid Hytale accounts
+- Offline mode: For private/LAN servers
+- Configurable via `HYTALE_AUTH_MODE`
+
+### 🎛️ Server Configuration
+
+**Network Settings**
+
+- Docker-compatible bind address (`0.0.0.0:5520`)
+- UDP port mapping for game traffic
+- Interactive console access via `docker attach`
+
+**Performance Tuning**
+
+- Customizable JVM memory allocation
+- Default: `-Xms1G -Xmx4G`
+- Additional Java arguments support
+- Eclipse Temurin 25 JDK base image
+
+**Asset Management**
+
+- Automatic `Assets.zip` detection
+- Parent directory fallback search
+- Custom asset path configuration
+
+### 🛠️ Developer Features
+
+**Cross-Platform Compatibility**
+
+- Automatic CRLF→LF line ending conversion
+- Windows, macOS, and Linux support
+- Consistent script execution across platforms
+
+**Modular Architecture**
+
+- Organized script structure in `/opt/hycker-scripts/`
+- Sourced utility scripts for maintainability
+- Extensible mod downloader system
+
+**Interactive Console**
+
+- Attach/detach without stopping server
+- TTY and stdin support
+- Real-time log viewing
+
+---
+
+## ⚠️ Requirements
+
+Before running Hycker, ensure your system meets the following requirements:
+
+### 🐋 Software Requirements
+
+| Component      | Version | Purpose                       |
+| -------------- | ------- | ----------------------------- |
+| Docker         | 20.10+  | Container runtime             |
+| Docker Compose | 2.0+    | Multi-container orchestration |
+
+**Installation Guides:**
+
+- [Docker Desktop](https://docs.docker.com/get-docker/) (Windows, macOS)
+- [Docker Engine](https://docs.docker.com/engine/install/) (Linux)
+
+### 💻 System Requirements
+
+**Minimum Specifications:**
+
+- **CPU**: 2 cores
+- **RAM**: 2GB available (4GB recommended)
+- **Storage**: 5GB free disk space
+- **Network**: Port `5520/udp` available
+
+**Recommended Specifications:**
+
+- **CPU**: 4+ cores
+- **RAM**: 8GB+ (adjust `JAVA_OPTS` accordingly)
+- **Storage**: 20GB+ SSD
+- **Network**: Stable internet connection
+
+### 🔑 Additional Requirements
+
+**First-Time Setup:**
+
+- Valid Hytale account for OAuth2 authentication
+- Access to Hytale Launcher credentials
+- Browser for authentication flow
+
+**Optional (for mod downloads):**
+
+- Public Google Drive folder (if using `HYCKER_MODS_GDRIVE_URL`)
+
+### 🌐 Port Configuration
+
+Ensure the following port is available and not blocked by firewall:
+
+```bash
+# Check if port 5520 UDP is available (Linux/macOS)
+sudo lsof -i :5520
+
+# Windows PowerShell
+Get-NetUDPEndpoint -LocalPort 5520
+```
+
+If port `5520` is already in use, modify the external port in `docker-compose.yml`:
+
+```yaml
+ports:
+  - "25565:5520/udp" # Change 25565 to any available port
+```
+
+---
+
 ## 🚀 Quick Start
+
+### Option A
+
+**Using Pre-built Image from Docker Hub**
+
+The Hycker image is available at: [https://hub.docker.com/r/jmbargueno/hycker](https://hub.docker.com/r/jmbargueno/hycker)
+
+1. Copy the Docker-compose example
+
+   ```
+   version: "3.9"
+
+   services:
+     hycker:
+       image: jmbargueno/hycker:latest
+       container_name: hycker
+       restart: unless-stopped
+       tty: true
+       stdin_open: true
+       ports:
+         - "5520:5520/udp" # Hytale server port (UDP)
+       # Environment variables for server configuration
+       environment:
+         # Hytale server settings
+         HYTALE_ASSETS_PATH: "Assets.zip"
+         HYTALE_AUTH_MODE: "authenticated"
+         HYTALE_BIND_ADDRESS: "0.0.0.0:5520"
+         # Backup configuration
+         HYTALE_BACKUP_ENABLED: "true"
+         HYTALE_BACKUP_FREQUENCY: "30"
+         HYTALE_BACKUP_DIR: "/hycker/backups"
+         # Server features
+         HYTALE_DISABLE_SENTRY: "false"
+         # Java memory configuration
+         JAVA_OPTS: "-Xms1G -Xmx4G"
+         # Auto update feature
+         HYTALE_AUTO_UPDATE: "true"
+         # Mods configuration (example CurseForge mod IDs)
+         HYCKER_MODS_CURSEFORGE_IDS: "1423494,1409811"
+       # Volume mounts for persistent data
+       volumes:
+         # All server data mounted to local ./data directory
+         - ./data:/hycker
+       network_mode: bridge
+
+   ```
+
+2. Run the container:
+   ```bash
+   docker-compose up -d
+   ```
+3. On first run, follow the OAuth2 authentication prompts to download server files
+4. The server will start automatically once files are downloaded
+
+### Option B
 
 1. Clone this repository
 2. Run the container:
@@ -16,69 +242,29 @@ A Docker container for running a Hytale game server with automated setup, backup
 3. On first run, follow the OAuth2 authentication prompts to download server files
 4. The server will start automatically once files are downloaded
 
-## 📁 Project Structure
+## 🔐 First-Time Setup
 
-### Core Files
+On first run, the container will:
 
-#### `Dockerfile`
+1. Download the Hytale downloader tool
+2. Prompt for OAuth2 authentication
+3. Display a URL and authorization code
+4. Open the URL in your browser and authenticate
+5. Download and extract server files automatically
 
-Multi-stage Docker image based on `eclipse-temurin:25-jdk-jammy` that:
+**Important**: Keep the `.hytale-downloader-credentials.json` file in your data directory for future updates.
 
-- Installs required dependencies (wget, unzip, curl)
-- Sets up the `/hycker` working directory
-- Copies and configures entrypoint and utility scripts
-- Creates a non-root user `hytale` (UID 1000) for security
-- Handles CRLF to LF line ending conversion for cross-platform compatibility
-- Includes health checks to monitor server status
+### Interactive Server Console
 
-**Key Features**:
+Attach to the running container to access the server console:
 
-- Minimal dependencies to reduce image size
-- Automatic line ending normalization for Windows/Linux compatibility
-- Health check monitors Java process every 30 seconds
-- Scripts copied to `/opt/hycker-scripts/` for organization.
-
-#### `docker-compose.yml`
-
-Defines the Hycker service with:
-
-- **Port mapping**: `25573:5520/udp` (external:internal)
-- **Volume mount**: `./data:/hycker` for persistent data
-- **Restart policy**: `unless-stopped` for automatic recovery
-- **Interactive mode**: `tty: true` and `stdin_open: true` for server console access
-
-**Configuration**:
-
-- All settings are configurable via environment variables
-- Uses bridge networking mode
-- Data persists in the local `./data` directory
-
-#### `entrypoint.sh`
-
-Main orchestration script that:
-
-1. Displays Hycker ASCII banner and version information
-2. Sources utility scripts from `/opt/hycker-scripts/`
-3. Downloads server files if not present (via OAuth2)
-4. Validates server JAR and Assets.zip existence
-5. Builds Java command array with all configuration options
-6. Displays complete startup information
-7. Starts the Hytale server with `exec`
-
-**Execution Flow**:
-
-```
-ASCII Banner → Source Scripts → Download Server Files → Validate Files →
-Build Java Args → Configure Backups → Display Info → Start Server
+```bash
+docker attach hycker
 ```
 
-### Utility Scripts
+Press `Ctrl+P` then `Ctrl+Q` to detach without stopping the server.
 
-See [scripts/SCRIPTS.md](scripts/SCRIPTS.md) for detailed documentation of:
-
-- `download-server.sh` - Server file download automation
-- `backup-config.sh` - Backup configuration management
-- `display-startup-info.sh` - Startup information display
+---
 
 ## ⚙️ Environment Variables
 
@@ -96,9 +282,10 @@ See [scripts/SCRIPTS.md](scripts/SCRIPTS.md) for detailed documentation of:
 | `HYCKER_MODS_ZIP_URL`         | URL of a mod ZIP to download and extract into `data/mods` before starting the server                                                                                                   | _(empty)_         | `https://example.com/mods.zip`                       |
 | `HYCKER_MODS_GDRIVE_URL`      | Google Drive folder URL to download all mods from before starting the server                                                                                                           | _(empty)_         | `https://drive.google.com/drive/folders/<FOLDER_ID>` |
 | `HYCKER_MODS_CURSEFORGE_IDS`  | Comma-separated list of CurseForge mod IDs to download before starting the server                                                                                                      | _(empty)_         | `12345,67890`                                        |
-| `HYTALE_CURSEFORGE_API_KEY`   | API key for CurseForge API (required for CurseForge mod downloads)                                                                                                                     | _(empty)_         | `your-api-key`                                       |
+| `HYTALE_CURSEFORGE_API_KEY`   | API key for CurseForge API (optional for custom builds)                                                                                                                                | _(empty)_         | `your-api-key`                                       |
 | `HYTALE_ACCEPT_EARLY_PLUGINS` | If `true`, enables the `--accept-early-plugins` flag when starting the server. Prints a yellow warning: "[WARNING] --accept-early-plugins is enabled. Early plugins will be accepted!" | `false`           | `true`                                               |
 | `HYTALE_ADDITIONAL_ARGS`      | Additional arguments to append to the Java command when starting the server. If set, these will be shown in yellow at startup. Useful for custom JVM or server flags.                  | _(empty)_         | `-Dfile.encoding=UTF-8`                              |
+| `SERVER_LAUNCHER_PATH`        | Path to custom server launcher JAR. If set, overrides default `Server/HytaleServer.jar`. Useful for custom builds or renamed launchers. (Check de docker-compose.dev.yml example)      | _(empty)_         | `/hycker-custom/Hyinit-X.X.X.jar`                    |
 
 ## ➕ Additional Java Arguments
 
@@ -112,195 +299,53 @@ HYTALE_ADDITIONAL_ARGS="-Dfile.encoding=UTF-8 -Duser.timezone=UTC"
 
 This will add those options to the Java process that runs the Hytale server.
 
-## 🧩 Early Plugins Acceptance
-
-If the environment variable `HYTALE_ACCEPT_EARLY_PLUGINS` is set to `true`, the container will start the server with the `--accept-early-plugins` flag. This allows early plugins to be accepted by the server. A yellow warning will be printed at startup:
-
-```
-[WARNING] --accept-early-plugins is enabled. Early plugins will be accepted!
-```
-
-Use this option only if you understand the risks of accepting early plugins.
-
 ---
 
-## 🔄 Automatic Update and Version Check
-
-The container always checks if a new Hytale server version is available before starting. If a new version is detected, a yellow warning will be printed:
+## 📁 Project Structure
 
 ```
-[HYCKER] New Hytale version available! Local: <local_version>, Remote: <remote_version>
+hycker/
+├── Dockerfile                                   # Multi-stage Docker image (eclipse-temurin:25-jdk-jammy)
+├── docker-compose.yml                           # Service definition with port mapping and volumes
+├── docker-compose.dev.yml                       # Development environment configuration
+├── entrypoint.sh                                # Main orchestration script (startup & initialization)
+├── test-curl.sh                                 # Testing utility for server endpoints
+├── README.md                                    # Project documentation
+├── assets/
+│   └── hycker_logo.png                          # Project logo
+├── scripts/
+│   ├── SCRIPTS.md                               # Detailed scripts documentation
+│   ├── download-server.sh                       # Server file download automation (OAuth2)
+│   ├── backup-config.sh                         # Backup configuration management
+│   ├── display-startup-info.sh                  # Startup information display
+│   ├── mods-downloader.sh                       # Mod download orchestrator
+│   └── mods_downloaders/
+│       ├── download-mods-from-zip-url.sh        # Download mods from ZIP URL
+│       ├── download-mods-gdrive.sh              # Download mods from Google Drive
+│       └── download-mods-curseforge.sh          # Download mods from CurseForge API
+└── data/                                        # Persistent data volume (mounted to /hycker)
 ```
-
-If the environment variable `HYTALE_AUTO_UPDATE` is set to `true`, the latest version will be downloaded and installed automatically. If set to `false`, only the warning will be shown and the server will not update automatically.
-
-This ensures you are always notified of new releases and can choose whether to update automatically or manually.
-
-## 🧩 Automatic Mods Download
-
-Hycker supports automatic mod installation from multiple sources using environment variables. The orchestrator script (`mods-downloader.sh`) will detect and process the following:
-
-- `HYCKER_MODS_ZIP_URL`: Downloads and extracts a ZIP file from a direct URL or Google Drive file/folder into `data/mods`.
-- `HYCKER_MODS_GDRIVE_URL`: Downloads all files from a Google Drive folder into `data/mods` (requires `gdown`).
-- `HYCKER_MODS_CURSEFORGE_IDS`: Downloads mods from CurseForge by numeric mod IDs (requires `HYTALE_CURSEFORGE_API_KEY` and `jq`).
-
-You can set one or more of these variables to automate mod installation. Each will be processed in order if set.
-
-### Example Configuration
-
-**docker-compose.yml**:
-
-```yaml
-environment:
-  # Direct ZIP download
-  HYCKER_MODS_ZIP_URL: "https://example.com/mods.zip"
-
-  # Google Drive folder
-  HYCKER_MODS_GDRIVE_URL: "https://drive.google.com/drive/folders/<FOLDER_ID>"
-
-  # CurseForge mods by ID
-  HYCKER_MODS_CURSEFORGE_IDS: "12345,67890"
-  HYTALE_CURSEFORGE_API_KEY: "your-api-key"
-```
-
-### Features
-
-- ✅ Automatic Google Drive detection and folder download
-- ✅ Supports direct ZIP and Google Drive file/folder URLs
-- ✅ Supports CurseForge mod downloads by ID (latest file)
-- ✅ Flattens directory structure for clean mod installation
-- ✅ Logs each action with a clear prefix
-
-This allows you to automate the installation of custom mods from multiple sources on every deployment.
-
-### Variable Details
-
-**HYTALE_ASSETS_PATH**
-
-- Points to the game assets archive
-- Required for server startup
-- Automatically searched in current and parent directories
-
-**HYTALE_AUTH_MODE**
-
-- `authenticated`: Requires valid Hytale accounts
-- `offline`: Allows offline/cracked clients (not recommended for public servers)
-
-**HYTALE_BIND_ADDRESS**
-
-- Must be `0.0.0.0:5520` for Docker containers to accept external connections
-- Port must match the internal port in docker-compose.yml
-
-**HYTALE_BACKUP_ENABLED**
-
-- When `true`, automatically backs up world data
-- Requires `HYTALE_BACKUP_DIR` and `HYTALE_BACKUP_FREQUENCY`
-
-**JAVA_OPTS**
-
-- `-Xms`: Initial heap size
-- `-Xmx`: Maximum heap size
-- Adjust based on available server RAM and player count
 
 ## 📂 Data Directory Structure
 
 ```
 data/
-├── Server/                  # Hytale server files
-│   └── HytaleServer.jar    # Main server executable
-├── Assets.zip              # Game assets
-├── config.json             # Server configuration
-├── bans.json              # Banned players list
-├── whitelist.json         # Whitelisted players
-├── permissions.json       # Player permissions
-├── logs/                  # Server logs
-├── mods/                  # Server mods
-├── universe/              # World data
-│   ├── players/          # Player data
-│   └── worlds/           # World saves
-└── backups/              # Automated backups (if enabled)
+├── Server/                          # Hytale server files
+│   └── HytaleServer.jar             # Main server executable
+├── Assets.zip                       # Game assets
+├── config.json                      # Server configuration
+├── bans.json                        # Banned players list
+├── whitelist.json                   # Whitelisted players
+├── permissions.json                 # Player permissions
+├── logs/                            # Server logs
+├── mods/                            # Server mods
+├── universe/                        # World data
+│   ├── players/                     # Player data
+│   └── worlds/                      # World saves
+└── backups/                         # Automated backups (if enabled)
 ```
 
-## 🔧 Usage Examples
-
-### Basic Usage
-
-```bash
-# Start the server
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop the server
-docker-compose down
-
-# Restart the server
-docker-compose restart
-```
-
-### Custom Configuration
-
-Edit `docker-compose.yml` to customize settings:
-
-```yaml
-environment:
-  JAVA_OPTS: "-Xms2G -Xmx8G" # Increase memory
-  HYTALE_BACKUP_FREQUENCY: "60" # Backup every hour
-  HYTALE_AUTH_MODE: "offline" # Allow offline mode
-```
-
-### Interactive Server Console
-
-Attach to the running container to access the server console:
-
-```bash
-docker attach hycker
-```
-
-Press `Ctrl+P` then `Ctrl+Q` to detach without stopping the server.
-
-## 🔐 First-Time Setup
-
-On first run, the container will:
-
-1. Download the Hytale downloader tool
-2. Prompt for OAuth2 authentication
-3. Display a URL and authorization code
-4. Open the URL in your browser and authenticate
-5. Download and extract server files automatically
-
-**Important**: Keep the `.hytale-downloader-credentials.json` file in your data directory for future updates.
-
-## 🏗️ Building the Image
-
-To build the Docker image locally:
-
-```bash
-docker build -t jmbargueno/hycker:latest .
-```
-
-To build and push to Docker Hub:
-
-```bash
-docker build -t jmbargueno/hycker:1.0.51 .
-docker push jmbargueno/hycker:1.0.51
-```
-
-## 🩺 Health Checks
-
-The container includes a health check that:
-
-- Runs every 30 seconds
-- Checks if the Java process is running
-- Allows 60 seconds for initial startup
-- Retries 3 times before marking as unhealthy
-
-Check health status:
-
-```bash
-docker inspect hycker | grep -A 10 Health
-```
+---
 
 ## 🛠️ Troubleshooting
 
@@ -326,6 +371,8 @@ docker inspect hycker | grep -A 10 Health
 - Ensure port 25573 UDP is not in use
 - Check firewall settings
 - Verify `HYTALE_BIND_ADDRESS` is set to `0.0.0.0:5520`
+
+---
 
 ## 📝 License
 

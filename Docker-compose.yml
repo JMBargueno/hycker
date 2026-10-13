@@ -9,7 +9,6 @@ services:
     stdin_open: true
     ports:
       - "5520:5520/udp" # Hytale server port (UDP)
-
     # Environment variables for server configuration
     environment:
       # Hytale server settings
@@ -20,21 +19,16 @@ services:
       HYTALE_BACKUP_ENABLED: "true"
       HYTALE_BACKUP_FREQUENCY: "30"
       HYTALE_BACKUP_DIR: "/hycker/backups"
-
       # Server features
       HYTALE_DISABLE_SENTRY: "false"
-
       # Java memory configuration
       JAVA_OPTS: "-Xms1G -Xmx4G"
-
       # Auto update feature
       HYTALE_AUTO_UPDATE: "true"
-
+      # Mods configuration (example CurseForge mod IDs)
       HYCKER_MODS_CURSEFORGE_IDS: "1423494,1409811"
-
     # Volume mounts for persistent data
     volumes:
       # All server data mounted to local ./data directory
       - ./data:/hycker
-
     network_mode: bridge
